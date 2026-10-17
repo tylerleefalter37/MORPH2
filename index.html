@@ -1,885 +1,1238 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>MorphLab: Herpetology Tycoon</title>
-  
-  <!-- iOS PWA Fullscreen Meta Tags -->
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="MorphLab" />
-  <meta name="theme-color" content="#090d16" />
-
-  <!-- Tailwind CSS & React Standalone (Zero Build Tooling Needed) -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <style>
-    body {
-      background-color: #090d16;
-      color: #f1f5f9;
-      user-select: none;
-      -webkit-user-select: none;
-      -webkit-touch-callout: none;
-      touch-action: manipulation;
-      padding-top: env(safe-area-inset-top);
-      padding-bottom: env(safe-area-inset-bottom);
-    }
-    ::-webkit-scrollbar { display: none; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>MorphLab: Herpetology Tycoon</title>
+<style>
+:root {
+  --bg: #07090b; --panel: #0e1318; --border: #1a2530; --border-bright: #2b3e52;
+  --text: #c8d6e5; --accent: #00ffaa; --gold: #f3ba2f; --danger: #ff4757;
+  --male: #38a169; --female: #d53f8c; --muted: #677b91; --white: #ffffff;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+  margin: 0; padding: 12px; background: var(--bg); color: var(--text);
+  font-family: 'SF Mono', 'Courier New', monospace; font-size: 13px; line-height: 1.4;
+}
+button {
+  background: #141f2b; color: var(--accent); border: 1px solid #23374d;
+  padding: 6px 12px; font-family: inherit; font-size: 11px; font-weight: bold;
+  cursor: pointer; border-radius: 4px; text-transform: uppercase; transition: 0.1s;
+}
+button:hover { background: var(--accent); color: #000; border-color: var(--accent); }
+button:disabled { opacity: 0.3; cursor: not-allowed; border-color: var(--border); color: var(--muted); }
+select, input {
+  background: #090c0f; color: #fff; border: 1px solid var(--border-bright);
+  padding: 6px; font-family: inherit; font-size: 11px; border-radius: 4px;
+}
+.header {
+  background: var(--panel); border: 1px solid var(--border); padding: 10px 14px;
+  display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+  border-radius: 6px; margin-bottom: 12px; gap: 8px;
+}
+.stat { font-weight: bold; color: var(--white); }
+.nav { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 12px; padding-bottom: 4px; }
+.nav button.active { background: var(--accent); color: #000; border-color: var(--accent); }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 12px; }
+.dossier {
+  background: var(--panel); border: 1px solid var(--border); border-radius: 6px;
+  padding: 12px; position: relative; border-left: 4px solid var(--border);
+}
+.dossier.male { border-left-color: var(--male); }
+.dossier.female { border-left-color: var(--female); }
+.dossier-head { display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; color: var(--white); margin-bottom: 4px; }
+.dossier-meta { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+.dossier-genes { color: var(--gold); font-size: 12px; margin-bottom: 6px; font-weight: bold; }
+.dossier-desc { font-size: 11px; color: #8ea1b5; margin-bottom: 10px; font-style: italic; background: #080b0e; padding: 6px; border-radius: 4px; }
+.badge { display: inline-block; padding: 2px 6px; font-size: 10px; border-radius: 3px; font-weight: bold; }
+.badge-gold { background: rgba(243,186,47,0.15); color: var(--gold); border: 1px solid var(--gold); }
+.badge-danger { background: rgba(255,71,87,0.15); color: var(--danger); border: 1px solid var(--danger); }
+.badge-accent { background: rgba(0,255,170,0.15); color: var(--accent); border: 1px solid var(--accent); }
+.badge-wf { background: linear-gradient(45deg, #f3ba2f, #ff0055); color: #fff; font-weight: 900; letter-spacing: 1px; animation: pulse 1s infinite alternate; }
+.auction-slot {
+  background: var(--panel); border: 1px dashed var(--border); border-radius: 6px;
+  padding: 12px; min-height: 140px; display: flex; flex-direction: column; justify-content: space-between;
+}
+.auction-slot.occupied { border-style: solid; border-color: var(--accent); }
+.auction-slot.overtime { border-color: var(--danger); animation: pulse 0.5s infinite alternate; }
+.auction-slot.hype { border-color: var(--gold); box-shadow: 0 0 10px rgba(243,186,47,0.3); }
+@keyframes pulse { from { opacity: 0.8; } to { opacity: 1; transform: scale(1.01); } }
+.save-box { width: 100%; height: 75px; background: #090c0f; border: 1px solid var(--border); color: #8ea1b5; font-family: inherit; font-size: 11px; padding: 6px; border-radius: 4px; margin-top: 6px; }
+</style>
 </head>
 <body>
-  <div id="root"></div>
 
-  <script type="text/babel">
-    const { useState, useEffect, useCallback, useRef } = React;
+<div class="header">
+  <div><span style="color:var(--accent); font-weight:900;">🐍 MORPHLAB PRO</span> <span id="hdr-day" class="badge badge-gold">DAY 1</span></div>
+  <div>BANK: <span id="hdr-bank" class="stat" style="color:var(--accent);">$5,000</span></div>
+  <div>FACILITY: <span id="hdr-tubs" class="stat">2 / 12</span></div>
+  <div><button onclick="advanceDay()" style="background:var(--accent); color:#000;">☀️ ADVANCE DAY</button></div>
+</div>
 
-    // --- SOUND ENGINE (Web Audio API) ---
-    class SoundEngine {
-      constructor() { this.ctx = null; }
-      init() {
-        if (!this.ctx) {
-          const AudioContext = window.AudioContext || window.webkitAudioContext;
-          this.ctx = new AudioContext();
+<div class="nav">
+  <button class="active" onclick="setTab('facility')">🐍 Facility Racks</button>
+  <button onclick="setTab('breeding')">🧬 5-Slot Breeding Rack</button>
+  <button onclick="setTab('auction')">🔨 10-Lane Auction Floor</button>
+  <button onclick="setTab('market')">🏷️ Liquidations & Trades</button>
+  <button onclick="setTab('stores')">🏬 Local Pet Shops</button>
+  <button onclick="setTab('feeders')">🐁 Feeder Colony</button>
+  <button onclick="setTab('isopods')">🍂 Isopod Vivarium</button>
+  <button onclick="setTab('upgrades')">🏗️ Expansion & Tech</button>
+  <button onclick="setTab('registry')">🌟 Registry & Trophies</button>
+  <button onclick="setTab('godmode')" style="color:var(--gold); border-color:var(--gold);">⚡ God Mode</button>
+  <button onclick="setTab('system')">💾 Saves</button>
+</div>
+
+<!-- 1. FACILITY RACKS -->
+<div id="tab-facility" class="tab-content active">
+  <div style="background:var(--panel); border:1px solid var(--border); padding:10px; border-radius:6px; margin-bottom:12px; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <button onclick="feedAllHungry()">Auto-Feed All Hungry</button>
+      <span style="color:var(--muted); font-size:11px;">Substrate: 
+        <select onchange="changeSubstrate(this.value)">
+          <option value="aspen">Aspen Shavings (Economic)</option>
+          <option value="coco">Coco Husk (+15% Shed Speed, $50/wk)</option>
+        </select>
+      </span>
+    </div>
+    <div style="display:flex; align-items:center; gap:6px;">
+      <span style="color:var(--muted); font-size:11px;">SORT:</span>
+      <select id="sort-selector" onchange="changeSort(this.value)">
+        <option value="default">Default Order</option>
+        <option value="weight">Weight (Heaviest First)</option>
+        <option value="value">Market Value (Highest First)</option>
+        <option value="age">Age (Oldest First)</option>
+        <option value="hunger">Hunger (Most Starved First)</option>
+        <option value="sex">Sex (Females First)</option>
+      </select>
+    </div>
+  </div>
+  <div id="facility-racks" class="grid"></div>
+</div>
+
+<!-- 2. 5-SLOT BREEDING RACK -->
+<div id="tab-breeding" class="tab-content">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+    <h3 style="margin:0; color:var(--white);">5-SLOT BREEDING ARRAY WITH LIVE ODDS PREVIEW</h3>
+    <button onclick="autoPairAll()" style="background:#20bf6b; color:#000;">⚡ Auto-Pair All Compatible</button>
+  </div>
+  <p style="color:var(--muted); margin:0 0 12px 0;">Mature pythons (Sire 500g+, Dam 1200g+) copulate for 3 days to lock follicles. The odds engine calculates exact offspring probability.</p>
+  <div id="breeding-slots-grid" class="grid" style="margin-bottom:20px;"></div>
+  
+  <h3 style="color:var(--white); margin:0 0 10px 0;">INCUBATOR (CANDLED CLUTCHES)</h3>
+  <div id="incubator-grid" class="grid"></div>
+</div>
+
+<!-- 3. 10-LANE AUCTION FLOOR -->
+<div id="tab-auction" class="tab-content">
+  <p style="color:var(--muted); margin:0 0 10px 0;">10 simultaneous live player-seller lanes. AI syndicates place bids with a rapid <b>3-Second Anti-Snipe Overtime</b> extension. Broker commission: 8%.</p>
+  <div id="auction-lanes" class="grid"></div>
+</div>
+
+<!-- 4. LIQUIDATIONS & TRADES -->
+<div id="tab-market" class="tab-content">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+    <h3 style="margin:0; color:var(--white);">DISTRESSED BARGAIN BINS (70% - 95% OFF)</h3>
+    <span class="badge badge-danger">REFRESHING IN: <span id="mkt-refresh-count">10</span>s</span>
+  </div>
+  <div id="bargain-bins" class="grid" style="margin-bottom:20px;"></div>
+  
+  <h3 style="color:var(--white); margin:0 0 10px 0;">BREEDER TRADE NETWORK (P2P CONTRACTS)</h3>
+  <div id="breeder-trades" class="grid"></div>
+</div>
+
+<!-- 5. LOCAL PET SHOPS & WHOLESALE REPS -->
+<div id="tab-stores" class="tab-content">
+  <h3 style="color:var(--white); margin:0 0 6px 0;">LOCAL EXOTIC SHOPS & REPS</h3>
+  <p style="color:var(--muted); margin:0 0 12px 0;">Wholesale surplus feeders & isopod starter cultures. Each store hosts a rapid 10-second micro-auction for exclusive regional morphs!</p>
+  <div id="stores-grid" class="grid"></div>
+</div>
+
+<!-- 6. FEEDER COMPOUND -->
+<div id="tab-feeders" class="tab-content">
+  <div class="grid" style="margin-bottom:16px;">
+    <div class="dossier">
+      <div class="dossier-head">MICE BREEDER COLONY</div>
+      <p style="color:var(--muted);">Yields Pinkies, Fuzzies, Hoppers, and Adult Mice every 3 days.</p>
+      <div id="mouse-colony-stat" style="color:var(--gold); margin-bottom:8px;">Trios: 1</div>
+      <button onclick="upgradeColony('mouse')">Add Mouse Trio ($120)</button>
+    </div>
+    <div class="dossier">
+      <div class="dossier-head">ASF RAT BREEDER COLONY</div>
+      <p style="color:var(--muted);">African Soft-Furred maternal groups produce Pups, Weanlings, Adults, and Jumbos.</p>
+      <div id="asf-colony-stat" style="color:var(--gold); margin-bottom:8px;">Colonies: 1</div>
+      <button onclick="upgradeColony('asf')">Add ASF Colony ($250)</button>
+    </div>
+  </div>
+  <div style="background:var(--panel); border:1px solid var(--border); padding:10px; border-radius:6px; margin-bottom:12px;">
+    <span style="font-weight:bold; color:var(--white);">NUTRITION UPGRADE:</span>
+    <button onclick="buyNutrition()" id="btn-nutrition">Upgrade to Gut-Loaded Chow ($500) [+20% Growth]</button>
+  </div>
+  <h3 style="color:var(--white); margin:0 0 8px 0;">FREEZER FEEDER INVENTORY & BULK CARTONS (+25% WHOLESALE VALUE)</h3>
+  <div id="feeder-inventory" class="grid"></div>
+</div>
+
+<!-- 7. BIOACTIVE ISOPODS -->
+<div id="tab-isopods" class="tab-content">
+  <p style="color:var(--muted); margin:0 0 10px 0;">Bioactive vivarium colonies provide permanent mechanical facility perks. Split mature cultures to harvest wholesale starter cups!</p>
+  <div id="isopod-grid" class="grid"></div>
+</div>
+
+<!-- 8. EXPANSION & TECH -->
+<div id="tab-upgrades" class="tab-content">
+  <h3 style="color:var(--white); margin:0 0 8px 0;">OPERATIONAL FACILITY HARDWARE</h3>
+  <div id="tech-tree-grid" class="grid" style="margin-bottom:20px;"></div>
+  
+  <h3 style="color:var(--white); margin:0 0 8px 0;">FACILITY EXPANSION LADDER (MAX 600 TUBS)</h3>
+  <div id="upgrade-ladder" class="grid"></div>
+</div>
+
+<!-- 9. WORLD'S FIRST REGISTRY -->
+<div id="tab-registry" class="tab-content">
+  <div class="dossier" style="border-left-color:var(--gold); margin-bottom:12px;">
+    <div class="dossier-head"><span style="color:var(--gold);">🌟 GLOBAL MORPH REGISTRY & BREEDER HALL OF FAME</span></div>
+    <p style="color:var(--muted);">Breeding an unrecorded combination grants the permanent <b>WORLD'S FIRST</b> pedigree, a <b>3.5× market valuation multiplier</b>, and an immediate <b>$2,500 Syndicate Bounty</b>!</p>
+    <div id="registry-count" style="color:var(--accent); font-weight:bold;">Unique Genetic Discoveries: 0</div>
+  </div>
+  <div id="registry-list" class="grid"></div>
+</div>
+
+<!-- 10. GOD MODE CONSOLE -->
+<div id="tab-godmode" class="tab-content">
+  <div class="dossier" style="border-left-color:var(--gold);">
+    <div class="dossier-head"><span style="color:var(--gold);">⚡ GOD MODE DEVELOPER CONSOLE</span></div>
+    <p style="color:var(--muted);">Instant sandbox controls for testing, gene simulation, and rapid clutch production.</p>
+    <div style="display:flex; flex-wrap:wrap; gap:8px;">
+      <button onclick="cheatBank(50000)">+$50,000 Cash</button>
+      <button onclick="cheatBank(250000)">+$250,000 Tycoon Bank</button>
+      <button onclick="cheatSpawnBooster()">Spawn 2-Gene Booster</button>
+      <button onclick="cheatForceWorldsFirst()">Force World's First Combo 🌟</button>
+      <button onclick="cheatHatchAllClutches()">Instant Hatch All Clutches</button>
+      <button onclick="cheatHealAll()">Full Feed & Perfect Sheds</button>
+      <button onclick="cheatFillFreezer()">Max Out Freezers (50x All)</button>
+    </div>
+  </div>
+</div>
+
+<!-- 11. SYSTEM & SAVES -->
+<div id="tab-system" class="tab-content">
+  <div class="dossier">
+    <div class="dossier-head">PERSISTENT JSON SAVE ARCHITECT</div>
+    <p style="color:var(--muted);">Game auto-saves every action locally. Copy or restore your raw JSON save file below:</p>
+    <button onclick="exportSave()">Export JSON</button>
+    <button onclick="importSave()">Restore JSON</button>
+    <button onclick="resetGame()" style="background:var(--danger); color:#fff; border-color:var(--danger);">Hard Reset</button>
+    <textarea id="save-io" class="save-box" placeholder="JSON save text will appear here..."></textarea>
+  </div>
+</div>
+
+<script>
+// --- MASTER GAME TABLES ---
+const FEEDER_TYPES = [
+  { id: 'pinky_mouse', name: 'Pinky Mouse (1-3g)', minWeight: 50, maxWeight: 120, gain: 12, cost: 2, sell: 1 },
+  { id: 'fuzzy_mouse', name: 'Fuzzy Mouse (4-7g)', minWeight: 100, maxWeight: 200, gain: 20, cost: 3, sell: 2 },
+  { id: 'hopper_mouse', name: 'Hopper Mouse (8-12g)', minWeight: 180, maxWeight: 350, gain: 35, cost: 4, sell: 3 },
+  { id: 'adult_mouse', name: 'Adult Mouse (18-25g)', minWeight: 300, maxWeight: 600, gain: 55, cost: 5, sell: 3 },
+  { id: 'rat_pup', name: 'Rat Pup (20-30g)', minWeight: 450, maxWeight: 800, gain: 70, cost: 6, sell: 4 },
+  { id: 'rat_weanling', name: 'Rat Weanling (35-50g)', minWeight: 700, maxWeight: 1200, gain: 95, cost: 8, sell: 6 },
+  { id: 'adult_rat', name: 'Adult Rat (100-150g)', minWeight: 1100, maxWeight: 2200, gain: 140, cost: 12, sell: 9 },
+  { id: 'jumbo_rat', name: 'Jumbo Rat (200-300g)', minWeight: 2000, maxWeight: 99999, gain: 210, cost: 18, sell: 14 }
+];
+
+const ISOPODS = [
+  { id: 'rubber_ducky', name: 'Rubber Ducky (Cubaris sp.)', rarity: 'Holy Grail', perk: '+2 Eggs to All Breeding Clutches', cost: 1800, cupSell: 250 },
+  { id: 'zebra', name: 'Zebra (A. maculatum)', rarity: 'Epic', perk: 'Instant Shed Cycle Recovery (0 Bad Sheds)', cost: 450, cupSell: 140 },
+  { id: 'lava', name: 'Lava (Porcellio scaber)', rarity: 'Rare', perk: 'Bioactive Sanitation: -30% Hunger Loss Daily', cost: 250, cupSell: 90 },
+  { id: 'clown_iso', name: 'Clown (A. klugii)', rarity: 'Rare', perk: 'Bioactive Calm: +15% Weight Gain on Feeds', cost: 200, cupSell: 80 },
+  { id: 'white_pigeon', name: 'White Pigeon (Cubaris sp.)', rarity: 'Epic', perk: 'Thermal Shield: Clutches Hatch 3 Days Faster', cost: 600, cupSell: 160 },
+  { id: 'magic_potion', name: 'Magic Potion (A. vulgare)', rarity: 'Uncommon', perk: 'Prolific Export: Generates $75 Cash Daily', cost: 120, cupSell: 50 }
+];
+
+const UPGRADES = [
+  { tier: 1, name: 'Sub-Adult Vision Rack (36-Tub)', cap: 36, cost: 1500, desc: 'Belly-heat tape; unlocks intermediate space.' },
+  { tier: 2, name: 'Commercial Freedom Breeder (75-Tub)', cap: 75, cost: 3800, desc: 'Heavy gauge steel racks; +10% pairing lock speed.' },
+  { tier: 3, name: 'Facility Annex Wing A (150-Tub)', cap: 150, cost: 8500, desc: 'Dedicated air conditioning and automated airflow.' },
+  { tier: 4, name: 'Industrial Warehouse Bay (300-Tub)', cap: 300, cost: 18000, desc: 'High-density commercial scale housing.' },
+  { tier: 5, name: 'Megafacility Compound (600-Tub)', cap: 600, cost: 35000, desc: 'Hard Maximum Capacity limit achieved.' }
+];
+
+const HARDWARE_TECH = [
+  { id: 'auto_feeder', name: 'Automated Feeder Logistics Array', cost: 2500, desc: 'Automatically feeds hungry snakes from freezer on Day tick.' },
+  { id: 'herpstat', name: 'Herpstat Proportional PID Thermostats', cost: 650, desc: 'Optimized belly heat tape speeds up digestion by 20%.' },
+  { id: 'mistking', name: 'MistKing High-Pressure Vivarium Array', cost: 950, desc: 'Doubles rodent & isopod colony reproduction rates.' },
+  { id: 'precision_inc', name: 'Precision Fan Sealed Incubator', cost: 1200, desc: 'Incubation periods reduced by 50% guaranteed.' },
+  { id: 'springtails', name: 'Springtail Co-Culture Master Seed', cost: 400, desc: 'Completely eliminates substrate mold and bacterial infections.' }
+];
+
+const LOCAL_STORES = [
+  { id: 'store_1', name: 'Metro Reptile Boutique', rep: 'High-End', wantFeeder: 'pinky_mouse', feederQty: 20, wantIso: 'rubber_ducky', payout: 160, auction: null },
+  { id: 'store_2', name: 'Swamp Coast Exotics', rep: 'Commercial', wantFeeder: 'adult_rat', feederQty: 8, wantIso: 'lava', payout: 180, auction: null },
+  { id: 'store_3', name: 'Apex Regional Outpost', rep: 'Syndicate', wantFeeder: 'rat_pup', feederQty: 12, wantIso: 'zebra', payout: 210, auction: null },
+  { id: 'store_4', name: 'Emerald Scaled Emporium', rep: 'Local Breeder', wantFeeder: 'hopper_mouse', feederQty: 15, wantIso: 'clown_iso', payout: 150, auction: null }
+];
+
+const AI_SYNDICATES = [
+  "Apex Constrictors", "Royal Python Syndicate", "Sub-Zero Morphs",
+  "Vipera Prime", "Scale & Clutch Collective", "Dr. Vance Herpetology", "Private Collector #44"
+];
+
+// --- MASTER GAME STATE ---
+let G = {
+  day: 1, bank: 5000, tubCap: 12, facilityTier: 0,
+  snakes: [], clutches: [], auctions: Array(10).fill(null),
+  breedingSlots: [
+    { sireId: null, damId: null, progress: 0 },
+    { sireId: null, damId: null, progress: 0 },
+    { sireId: null, damId: null, progress: 0 },
+    { sireId: null, damId: null, progress: 0 },
+    { sireId: null, damId: null, progress: 0 }
+  ],
+  feeders: { pinky_mouse: 25, fuzzy_mouse: 15, hopper_mouse: 10, adult_mouse: 8, rat_pup: 6, rat_weanling: 4, adult_rat: 4, jumbo_rat: 2 },
+  colonies: { mouse: 1, asf: 1 },
+  isopodsOwned: ['magic_potion'],
+  isoSplitsReady: false,
+  hardwareOwned: [],
+  gutLoadedChow: false,
+  substrate: 'aspen',
+  discoveredMorphs: ["NORMAL (WILD-TYPE)", "PASTEL", "100% HET PIEBALD", "MOJAVE", "100% HET CLOWN"],
+  hallOfFame: [],
+  bargains: [], trades: [],
+  marketTimer: 10,
+  sortMode: 'default'
+};
+
+const uid = () => Math.random().toString(36).substr(2, 9);
+
+// --- GENETICS ENGINE ---
+function generateGenotype(overrides = {}) {
+  return {
+    pied: overrides.pied || ['wt', 'wt'],
+    clown: overrides.clown || ['wt', 'wt'],
+    albino: overrides.albino || ['wt', 'wt'],
+    lavender: overrides.lavender || ['wt', 'wt'],
+    pastel: overrides.pastel || ['wt', 'wt'],
+    enchi: overrides.enchi || ['wt', 'wt'],
+    banana: overrides.banana || ['wt', 'wt'],
+    bel_locus: overrides.bel_locus || ['wt', 'wt'],
+    cinny_locus: overrides.cinny_locus || ['wt', 'wt'],
+    yb_locus: overrides.yb_locus || ['wt', 'wt'],
+    fire_locus: overrides.fire_locus || ['wt', 'wt'],
+    spider: overrides.spider || ['wt', 'wt'],
+    pinstripe: overrides.pinstripe || ['wt', 'wt']
+  };
+}
+
+function resolveDossier(g) {
+  let visuals = [];
+  let hets = [];
+  let value = 75;
+
+  const checkRec = (alleles, name, val) => {
+    let count = alleles.filter(a => a === name).length;
+    if (count === 2) { visuals.push(name.toUpperCase()); value += val; }
+    else if (count === 1) { hets.push("100% Het " + name.toUpperCase()); value += Math.floor(val * 0.22); }
+  };
+  checkRec(g.pied, 'piebald', 750);
+  checkRec(g.clown, 'clown', 850);
+  checkRec(g.albino, 'albino', 400);
+  checkRec(g.lavender, 'lavender', 900);
+
+  const checkCodom = (alleles, gene, superName, singleVal, superVal) => {
+    let count = alleles.filter(a => a === gene).length;
+    if (count === 2) { visuals.push(superName); value += superVal; }
+    else if (count === 1) { visuals.push(gene.toUpperCase()); value += singleVal; }
+  };
+  checkCodom(g.pastel, 'pastel', 'SUPER PASTEL', 120, 350);
+  checkCodom(g.enchi, 'enchi', 'SUPER ENCHI', 150, 420);
+  checkCodom(g.banana, 'banana', 'SUPER BANANA', 220, 550);
+
+  let belCount = g.bel_locus.filter(a => a !== 'wt').length;
+  if (belCount === 2) { visuals.push("BLUE-EYED LEUCISTIC (BEL)"); value += 950; }
+  else if (belCount === 1) { visuals.push(g.bel_locus.find(a => a !== 'wt').toUpperCase()); value += 200; }
+
+  let c1 = g.cinny_locus[0], c2 = g.cinny_locus[1];
+  if (c1 !== 'wt' && c2 !== 'wt') {
+    if (c1 === 'cinny' && c2 === 'cinny') { visuals.push("SUPER CINNAMON"); value += 600; }
+    else if (c1 === 'black_pastel' && c2 === 'black_pastel') { visuals.push("SUPER BLACK PASTEL"); value += 750; }
+    else { visuals.push("EIGHT-BALL"); value += 650; }
+  } else if (c1 !== 'wt' || c2 !== 'wt') {
+    visuals.push((c1 !== 'wt' ? c1 : c2).replace('_', ' ').toUpperCase()); value += 150;
+  }
+
+  let yCount = g.yb_locus.filter(a => a !== 'wt').length;
+  if (yCount === 2) {
+    if (g.yb_locus.includes('gravel')) { visuals.push("HIGHWAY"); value += 800; }
+    else { visuals.push("IVORY"); value += 600; }
+  } else if (yCount === 1) {
+    visuals.push(g.yb_locus.find(a => a !== 'wt').toUpperCase()); value += 100;
+  }
+
+  let fireCount = g.fire_locus.filter(a => a === 'fire').length;
+  if (fireCount === 2) { visuals.push("SUPER FIRE (BLACK-EYED LUCY)"); value += 700; }
+  else if (fireCount === 1) { visuals.push("FIRE"); value += 120; }
+
+  if (g.spider.includes('spider')) { visuals.push("SPIDER"); value += 90; }
+  if (g.pinstripe.includes('pinstripe')) { visuals.push("PINSTRIPE"); value += 110; }
+
+  let isSuperBlack = g.cinny_locus.filter(a => a === 'black_pastel').length === 2;
+  let isVisualPied = g.pied.filter(a => a === 'piebald').length === 2;
+  if (isSuperBlack && isVisualPied) {
+    visuals = ["PANDA PIED (ULTRA EPIC)"];
+    value += 2800;
+  }
+
+  let morphName = visuals.length > 0 ? visuals.join(" ") : "NORMAL (WILD-TYPE)";
+  let isWorldsFirst = false;
+
+  // Check World's First Status
+  if (visuals.length >= 2 || (visuals.length >= 1 && hets.length >= 1)) {
+    if (!G.discoveredMorphs.includes(morphName)) {
+      isWorldsFirst = true;
+      value = Math.floor(value * 3.5); // 3.5x Exponential Value Multiplier!
+    }
+  }
+
+  let desc = `Specimen expresses ${morphName.toLowerCase()} with vivid markings and clean ventral scales. Highly alert behavior.`;
+  return { morphName, hets: hets.join(", "), value, desc, isWorldsFirst };
+}
+
+function mixGenotypes(sire, dam) {
+  let child = {};
+  const pass = (a, b) => [a[Math.floor(Math.random()*2)], b[Math.floor(Math.random()*2)]];
+  for (let key in sire) child[key] = pass(sire[key], dam[key]);
+  return child;
+}
+
+// Monte Carlo Punnett Odds Calculator (100 trials)
+function calculateBreedingOdds(sireGeno, damGeno) {
+  let outcomes = {};
+  for (let i = 0; i < 100; i++) {
+    let childGeno = mixGenotypes(sireGeno, damGeno);
+    let d = resolveDossier(childGeno);
+    outcomes[d.morphName] = (outcomes[d.morphName] || 0) + 1;
+  }
+  let sorted = Object.entries(outcomes).sort((a,b) => b[1] - a[1]);
+  return sorted.slice(0, 4).map(e => `${e[1]}% ${e[0]}`).join(" | ");
+}
+
+// --- INIT GAME ---
+function initGame() {
+  G.snakes.push({
+    id: uid(), name: "Viper 01", sex: 'M', age: 360, weight: 850, hunger: 100, shed: 'Normal',
+    genotype: generateGenotype({ pastel: ['pastel', 'wt'], pied: ['piebald', 'wt'] })
+  });
+  G.snakes.push({
+    id: uid(), name: "Siren 02", sex: 'F', age: 400, weight: 1650, hunger: 100, shed: 'Normal',
+    genotype: generateGenotype({ bel_locus: ['mojave', 'wt'], clown: ['clown', 'wt'] })
+  });
+  refreshMarket();
+  refreshStoreAuctions();
+  updateAll();
+}
+
+// --- DAILY CYCLE ---
+function advanceDay() {
+  G.day++;
+
+  if (G.isopodsOwned.includes('magic_potion')) G.bank += 75;
+  if (G.day % 4 === 0) G.isoSplitsReady = true;
+
+  if (G.substrate === 'coco') {
+    if (G.bank >= 50) G.bank -= 50;
+    else G.substrate = 'aspen';
+  }
+
+  if (G.hardwareOwned.includes('auto_feeder')) feedAllHungry();
+
+  let hungerDrop = G.isopodsOwned.includes('lava') ? 5 : 8;
+  G.snakes.forEach(s => {
+    s.age++;
+    s.hunger = Math.max(0, s.hunger - hungerDrop);
+    
+    if (G.isopodsOwned.includes('zebra') || G.substrate === 'coco') {
+      s.shed = 'Normal';
+    } else {
+      if (Math.random() < 0.05 && s.shed === 'Normal') s.shed = 'In Blue';
+      else if (s.shed === 'In Blue') s.shed = 'Fresh Shed';
+      else if (s.shed === 'Fresh Shed') s.shed = 'Normal';
+    }
+  });
+
+  if (G.day % 3 === 0) {
+    let multi = G.hardwareOwned.includes('mistking') ? 2 : 1;
+    G.feeders.pinky_mouse += G.colonies.mouse * 6 * multi;
+    G.feeders.fuzzy_mouse += G.colonies.mouse * 4 * multi;
+    G.feeders.adult_mouse += G.colonies.mouse * 2 * multi;
+    G.feeders.rat_pup += G.colonies.asf * 5 * multi;
+    G.feeders.adult_rat += G.colonies.asf * 3 * multi;
+  }
+
+  // 5-Slot Breeding Progress
+  G.breedingSlots.forEach((slot, idx) => {
+    if (slot.sireId && slot.damId) {
+      slot.progress++;
+      if (slot.progress >= 3) {
+        let sire = G.snakes.find(s => s.id === slot.sireId);
+        let dam = G.snakes.find(s => s.id === slot.damId);
+        if (sire && dam) {
+          let clutchCount = Math.floor(Math.random() * 4) + 4;
+          if (G.isopodsOwned.includes('rubber_ducky')) clutchCount += 2;
+          let incDays = G.hardwareOwned.includes('precision_inc') ? 6 : (G.isopodsOwned.includes('white_pigeon') ? 9 : 12);
+
+          let eggs = [];
+          for (let i = 0; i < clutchCount; i++) eggs.push(mixGenotypes(sire.genotype, dam.genotype));
+          G.clutches.push({ id: uid(), daysLeft: incDays, eggs, candled: false });
+          dam.weight -= (clutchCount * 70);
+          dam.hunger = 10;
         }
-        if (this.ctx.state === 'suspended') this.ctx.resume();
-      }
-      playBid() {
-        try {
-          this.init();
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(440, this.ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(880, this.ctx.currentTime + 0.08);
-          gain.gain.setValueAtTime(0.12, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
-          osc.connect(gain); gain.connect(this.ctx.destination);
-          osc.start(); osc.stop(this.ctx.currentTime + 0.08);
-        } catch(e){}
-      }
-      playHammer() {
-        try {
-          this.init();
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(140, this.ctx.currentTime);
-          osc.frequency.exponentialRampToValueAtTime(30, this.ctx.currentTime + 0.3);
-          gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
-          osc.connect(gain); gain.connect(this.ctx.destination);
-          osc.start(); osc.stop(this.ctx.currentTime + 0.3);
-        } catch(e){}
-      }
-      playCash() {
-        try {
-          this.init();
-          const now = this.ctx.currentTime;
-          const osc = this.ctx.createOscillator();
-          const gain = this.ctx.createGain();
-          osc.frequency.setValueAtTime(987.77, now);
-          osc.frequency.setValueAtTime(1318.51, now + 0.08);
-          gain.gain.setValueAtTime(0.18, now);
-          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-          osc.connect(gain); gain.connect(this.ctx.destination);
-          osc.start(); osc.stop(now + 0.25);
-        } catch(e){}
+        slot.sireId = null; slot.damId = null; slot.progress = 0;
       }
     }
-    const audio = new SoundEngine();
+  });
 
-    // --- GENETICS CATALOG & DATA ---
-    const GENES = {
-      piebald: { id: 'piebald', name: 'Piebald', locus: 'piebald_locus', type: 'recessive', val: 400, desc: 'unpigmented white lateral patches with jagged dorsal saddles' },
-      clown: { id: 'clown', name: 'Clown', locus: 'clown_locus', type: 'recessive', val: 500, desc: 'distorted teardrop dorsal striping with intense facial mask' },
-      albino: { id: 'albino', name: 'Albino', locus: 'albino_locus', type: 'recessive', val: 300, desc: 'amelanistic bright lemon-yellow on snow white with ruby eyes' },
-      lavender: { id: 'lavender', name: 'Lavender Albino', locus: 'lavender_locus', type: 'recessive', val: 650, desc: 'soft plum-gray undertones shading into lavender-violet' },
-      axanthic: { id: 'axanthic', name: 'Axanthic (TSK)', locus: 'axanthic_locus', type: 'recessive', val: 450, desc: 'monochrome silver and obsidian devoid of yellow and red' },
-      hypo: { id: 'hypo', name: 'Hypo (Ghost)', locus: 'hypo_locus', type: 'recessive', val: 280, desc: 'frosted haze muting body coloration into pale amber and lilac' },
-      pastel: { id: 'pastel', name: 'Pastel', locus: 'pastel_locus', type: 'codominant', superName: 'Super Pastel', val: 120, desc: 'lime-yellow blushing with faded head cap' },
-      enchi: { id: 'enchi', name: 'Enchi', locus: 'enchi_locus', type: 'codominant', superName: 'Super Enchi', val: 150, desc: 'deep golden-orange banding with reduced pattern' },
-      banana: { id: 'banana', name: 'Banana', locus: 'banana_locus', type: 'codominant', superName: 'Super Banana', val: 220, desc: 'coral-pink and yellow ground with emerging pepper freckles' },
-      leopard: { id: 'leopard', name: 'Leopard', locus: 'leopard_locus', type: 'codominant', superName: 'Super Leopard', val: 200, desc: 'dense dark rosettes and spotted dorsal tracks' },
-      mojave: { id: 'mojave', name: 'Mojave', locus: 'bel_complex', type: 'complex', val: 160, desc: 'alien heads with lilac centers and deep chocolate ground' },
-      lesser: { id: 'lesser', name: 'Lesser', locus: 'bel_complex', type: 'complex', val: 160, desc: 'rich honey yellow side flaming and clean white belly' },
-      cinnamon: { id: 'cinnamon', name: 'Cinnamon', locus: 'cinny_complex', type: 'complex', val: 140, desc: 'warm reddish-cinnamon body with clean circular spots' },
-      black_pastel: { id: 'black_pastel', name: 'Black Pastel', locus: 'cinny_complex', type: 'complex', val: 150, desc: 'deep soot-black coloration with gold-veined highlights' },
-      yellowbelly: { id: 'yellowbelly', name: 'Yellowbelly', locus: 'yb_complex', type: 'complex', val: 130, desc: 'intense checkered belly borders and speckled dorsal scales' },
-      gravel: { id: 'gravel', name: 'Gravel', locus: 'yb_complex', type: 'complex', val: 400, desc: 'faded mustard-tan patterning and jagged belly checks' },
-      fire: { id: 'fire', name: 'Fire', locus: 'fire_complex', type: 'complex', val: 150, desc: 'blonde dorsal highlighting with creamy flamed flanks' },
-      spider: { id: 'spider', name: 'Spider', locus: 'spider_locus', type: 'dominant', val: 130, desc: 'thin web branching and gleaming high-white lateral flanks' },
-      pinstripe: { id: 'pinstripe', name: 'Pinstripe', locus: 'pinstripe_locus', type: 'dominant', val: 140, desc: 'vertical copper vertebral stripe with needle-thin striping' }
-    };
+  // Incubator progress & World's First Check
+  for (let i = G.clutches.length - 1; i >= 0; i--) {
+    let cl = G.clutches[i];
+    cl.daysLeft--;
+    if (cl.daysLeft <= 0) {
+      cl.eggs.forEach(eggGeno => {
+        let d = resolveDossier(eggGeno);
+        
+        // Check World's First Discovery
+        if (d.isWorldsFirst) {
+          G.discoveredMorphs.push(d.morphName);
+          G.bank += 2500; // Breeder grant
+          G.hallOfFame.push({ morph: d.morphName, day: G.day, bounty: 2500 });
+          alert(`🌟 WORLD'S FIRST DISCOVERY! 🌟\nYou produced the world's first ${d.morphName}!\n+3.5x Market Value & +$2,500 Syndicate Bounty!`);
+        }
 
-    const FEEDER_SPECS = [
-      { id: 'pinky_mouse', name: 'Pinky Mouse', weight: '1–3g', min: 50, max: 120, gain: 12, cost: 2 },
-      { id: 'fuzzy_mouse', name: 'Fuzzy Mouse', weight: '4–7g', min: 100, max: 200, gain: 20, cost: 3 },
-      { id: 'hopper_mouse', name: 'Hopper Mouse', weight: '8–12g', min: 180, max: 350, gain: 35, cost: 4 },
-      { id: 'adult_mouse', name: 'Adult Mouse', weight: '18–25g', min: 300, max: 600, gain: 55, cost: 5 },
-      { id: 'rat_pup', name: 'Rat Pup', weight: '20–30g', min: 450, max: 800, gain: 70, cost: 6 },
-      { id: 'rat_weanling', name: 'Rat Weanling', weight: '35–50g', min: 700, max: 1200, gain: 95, cost: 8 },
-      { id: 'adult_rat', name: 'Adult Rat', weight: '100–150g', min: 1100, max: 2200, gain: 140, cost: 12 },
-      { id: 'jumbo_rat', name: 'Jumbo Rat', weight: '200–300g', min: 2000, max: 5000, gain: 210, cost: 18 }
-    ];
-
-    const ISOPODS = [
-      { id: 'rubber_ducky', name: 'Rubber Ducky', sci: 'Cubaris sp.', rarity: 'Holy Grail', pop: 12, buff: '+20% egg clutch fertility', price: 180 },
-      { id: 'zebra', name: 'Zebra Isopod', sci: 'Armadillidium maculatum', rarity: 'Epic', pop: 25, buff: 'Accelerates snake shed recovery', price: 75 },
-      { id: 'lava', name: 'Lava Isopod', sci: 'Porcellio scaber', rarity: 'Rare', pop: 40, buff: 'Aggressive waste decomposer', price: 45 },
-      { id: 'clown', name: 'Clown Isopod', sci: 'Armadillidium klugii', rarity: 'Rare', pop: 30, buff: 'Bioactive mold mitigation', price: 50 },
-      { id: 'white_pigeon', name: 'White Pigeon', sci: 'Cubaris sp.', rarity: 'Epic', pop: 18, buff: 'Passive vitality boost to hatchlings', price: 110 },
-      { id: 'magic_potion', name: 'Magic Potion', sci: 'Armadillidium vulgare', rarity: 'Uncommon', pop: 50, buff: 'Fast reproductive starter packs', price: 30 }
-    ];
-
-    const FACILITY_TIERS = [
-      { tier: 0, name: 'Starter Quarantine Shelving', cap: 12, cost: 0 },
-      { tier: 1, name: 'Sub-Adult Vision Rack (36-Tub)', cap: 36, cost: 1500 },
-      { tier: 2, name: 'Commercial Freedom Breeder (75-Tub)', cap: 75, cost: 3800 },
-      { tier: 3, name: 'Facility Wing A Expansion (150-Tub)', cap: 150, cost: 8500 },
-      { tier: 4, name: 'Industrial Warehouse Bay (300-Tub)', cap: 300, cost: 18000 },
-      { tier: 5, name: 'Megafacility Master Compound', cap: 600, cost: 35000 }
-    ];
-
-    const AI_BIDDERS = [
-      'Apex Constrictors', 'Royal Python Syndicate', 'Sub-Zero Morphs',
-      'Vipera Prime', 'Scale & Clutch Collective', 'Dr. Vance Herpetology', 'Private Collector #44'
-    ];
-
-    // --- GENETICS RESOLUTION ---
-    function resolveSpecimen(genotype, sex, age, weight, breeder, gen) {
-      let visualGenes = [];
-      let hets = [];
-      let desc = [];
-      let val = 150;
-
-      // BEL complex
-      const bel = genotype.find(g => g.locus === 'bel_complex');
-      if (bel) {
-        if (bel.a1 !== 'wt' && bel.a2 !== 'wt') {
-          visualGenes.push('Blue-Eyed Leucistic (BEL)');
-          desc.push('Pure snow-white unblemished scales with icy blue eyes.');
-          val += 1800;
+        if (G.snakes.length < G.tubCap) {
+          G.snakes.push({
+            id: uid(), name: `Hatchling ${G.snakes.length+1}`,
+            sex: Math.random() > 0.5 ? 'M' : 'F', age: 0,
+            weight: 65, hunger: 100, shed: 'Fresh Shed', genotype: eggGeno
+          });
         } else {
-          const act = bel.a1 !== 'wt' ? bel.a1 : bel.a2;
-          if (act !== 'wt' && GENES[act]) { visualGenes.push(GENES[act].name); desc.push(GENES[act].desc); val += GENES[act].val; }
-        }
-      }
-
-      // Cinnamon complex
-      const cinny = genotype.find(g => g.locus === 'cinny_complex');
-      let isSuperBlackPastel = false;
-      if (cinny) {
-        if (cinny.a1 === 'cinnamon' && cinny.a2 === 'cinnamon') { visualGenes.push('Super Cinnamon'); val += 1200; }
-        else if (cinny.a1 === 'black_pastel' && cinny.a2 === 'black_pastel') { visualGenes.push('Super Black Pastel'); isSuperBlackPastel = true; val += 1400; }
-        else if (cinny.a1 !== 'wt' && cinny.a2 !== 'wt') { visualGenes.push('Eight Ball'); val += 1600; }
-        else {
-          const act = cinny.a1 !== 'wt' ? cinny.a1 : cinny.a2;
-          if (act !== 'wt' && GENES[act]) { visualGenes.push(GENES[act].name); desc.push(GENES[act].desc); val += GENES[act].val; }
-        }
-      }
-
-      // Yellowbelly complex
-      const yb = genotype.find(g => g.locus === 'yb_complex');
-      if (yb) {
-        if (yb.a1 === 'yellowbelly' && yb.a2 === 'yellowbelly') { visualGenes.push('Ivory'); val += 1100; }
-        else if ((yb.a1 === 'yellowbelly' && yb.a2 === 'gravel') || (yb.a1 === 'gravel' && yb.a2 === 'yellowbelly')) { visualGenes.push('Highway'); desc.push('Hypnotic golden-orange broken vertebral freeway racing stripe bordered by purple flanks.'); val += 2400; }
-        else {
-          const act = yb.a1 !== 'wt' ? yb.a1 : yb.a2;
-          if (act !== 'wt' && GENES[act]) { visualGenes.push(GENES[act].name); desc.push(GENES[act].desc); val += GENES[act].val; }
-        }
-      }
-
-      // Fire complex
-      const fire = genotype.find(g => g.locus === 'fire_complex');
-      if (fire) {
-        if (fire.a1 === 'fire' && fire.a2 === 'fire') { visualGenes.push('Super Fire (Black-Eyed Leucistic)'); desc.push('Snow white with solid obsidian black eyes.'); val += 1500; }
-        else if (fire.a1 === 'fire' || fire.a2 === 'fire') { visualGenes.push('Fire'); val += GENES.fire.val; }
-      }
-
-      let isPied = false;
-      genotype.forEach(p => {
-        if (['bel_complex', 'cinny_complex', 'yb_complex', 'fire_complex'].includes(p.locus)) return;
-        const act = p.a1 !== 'wt' ? p.a1 : p.a2;
-        const def = GENES[act];
-        if (!def) return;
-
-        if (def.type === 'recessive') {
-          if (p.a1 === p.a2 && p.a1 !== 'wt') {
-            visualGenes.push(def.name);
-            desc.push(def.desc);
-            val += def.val * 2.2;
-            if (def.id === 'piebald') isPied = true;
-          } else if (p.a1 !== 'wt' || p.a2 !== 'wt') {
-            hets.push({ gene: def.name, pct: p.possibleHet || 100 });
-            val += def.val * 0.45;
-          }
-        } else if (def.type === 'codominant') {
-          if (p.a1 === p.a2 && p.a1 !== 'wt') {
-            visualGenes.push(def.superName);
-            desc.push(`Super form: blinding expression of ${def.name}`);
-            val += def.val * 3.5;
-          } else if (p.a1 !== 'wt' || p.a2 !== 'wt') {
-            visualGenes.push(def.name);
-            desc.push(def.desc);
-            val += def.val;
-          }
-        } else if (def.type === 'dominant') {
-          if (p.a1 !== 'wt' || p.a2 !== 'wt') {
-            visualGenes.push(def.name);
-            desc.push(def.desc);
-            val += def.val;
-          }
+          G.bank += Math.floor(d.value * 0.4); // Liquidated over cap
         }
       });
+      G.clutches.splice(i, 1);
+    }
+  }
 
-      if (isSuperBlackPastel && isPied) {
-        visualGenes = visualGenes.filter(g => g !== 'Super Black Pastel' && g !== 'Piebald');
-        visualGenes.unshift('Panda Pied');
-        desc.unshift('Pure high-white body accented by jet-black facial mask and dorsal saddles.');
-        val += 4500;
+  updateAll();
+}
+
+// --- FEEDING & WHOLESALE ---
+function feedSnake(id) {
+  let s = G.snakes.find(x => x.id === id);
+  if (!s || s.hunger >= 100) return;
+  let prey = FEEDER_TYPES.find(f => s.weight >= f.minWeight && s.weight <= f.maxWeight) || FEEDER_TYPES[0];
+  
+  if (G.feeders[prey.id] > 0) {
+    G.feeders[prey.id]--;
+    s.hunger = 100;
+    let gain = prey.gain;
+    if (G.isopodsOwned.includes('clown_iso')) gain = Math.floor(gain * 1.15);
+    if (G.gutLoadedChow) gain = Math.floor(gain * 1.20);
+    s.weight += gain;
+    updateAll();
+  } else {
+    alert(`No ${prey.name} in freezer inventory!`);
+  }
+}
+
+function feedAllHungry() {
+  G.snakes.forEach(s => { if (s.hunger < 100) feedSnake(s.id); });
+}
+
+function wholesaleFeeder(feederId, count) {
+  let f = FEEDER_TYPES.find(x => x.id === feederId);
+  if (G.feeders[feederId] >= count) {
+    G.feeders[feederId] -= count;
+    G.bank += f.sell * count;
+    updateAll();
+  }
+}
+
+function packWholesaleCarton(feederId) {
+  let f = FEEDER_TYPES.find(x => x.id === feederId);
+  if (G.feeders[feederId] >= 25) {
+    G.feeders[feederId] -= 25;
+    let bonusPayout = Math.floor(f.sell * 25 * 1.25); // +25% carton bonus
+    G.bank += bonusPayout;
+    alert(`Packed & Shipped 25x Carton of ${f.name}! Received $${bonusPayout}.`);
+    updateAll();
+  } else {
+    alert(`Need 25 ${f.name}s to pack a wholesale carton.`);
+  }
+}
+
+function quickWholesaleSnake(id) {
+  let sIdx = G.snakes.findIndex(s => s.id === id);
+  let s = G.snakes[sIdx];
+  let d = resolveDossier(s.genotype);
+  let payout = Math.floor(d.value * 0.45);
+  G.bank += payout;
+  G.snakes.splice(sIdx, 1);
+  updateAll();
+}
+
+function renameSnake(id) {
+  let s = G.snakes.find(x => x.id === id);
+  let newName = prompt("Enter custom kennel name for this snake:", s.name);
+  if (newName) { s.name = newName; updateAll(); }
+}
+
+// --- 5-SLOT BREEDING ARRAY ---
+function assignBreederSlot(slotIdx, type, snakeId) {
+  let slot = G.breedingSlots[slotIdx];
+  if (type === 'sire') slot.sireId = snakeId || null;
+  if (type === 'dam') slot.damId = snakeId || null;
+  slot.progress = 0;
+  updateAll();
+}
+
+function autoPairAll() {
+  let pairedIds = new Set();
+  G.breedingSlots.forEach(s => {
+    if (s.sireId) pairedIds.add(s.sireId);
+    if (s.damId) pairedIds.add(s.damId);
+  });
+
+  let matureMales = G.snakes.filter(s => s.sex === 'M' && s.weight >= 500 && !pairedIds.has(s.id));
+  let matureFemales = G.snakes.filter(s => s.sex === 'F' && s.weight >= 1200 && !pairedIds.has(s.id));
+
+  G.breedingSlots.forEach(slot => {
+    if (!slot.sireId && matureMales.length > 0) slot.sireId = matureMales.pop().id;
+    if (!slot.damId && matureFemales.length > 0) slot.damId = matureFemales.pop().id;
+  });
+  updateAll();
+}
+
+function candleClutch(clutchIdx) {
+  let cl = G.clutches[clutchIdx];
+  cl.candled = true;
+  let sampleDossier = resolveDossier(cl.eggs[0]);
+  alert(`🥚 CANDLING REPORT:\nEmbryos: ${cl.eggs.length} fertile calcified eggs.\nVein Network: 100% Strong pulse.\nEarly Scan Prediction: High probability of ${sampleDossier.morphName}!`);
+  updateAll();
+}
+
+// --- 10-LANE AUCTION FLOOR (3s ANTI-SNIPE OVERTIME) ---
+function consignToLane(snakeId, laneIdx) {
+  let sIdx = G.snakes.findIndex(s => s.id === snakeId);
+  let snake = G.snakes[sIdx];
+  let dossier = resolveDossier(snake.genotype);
+
+  G.snakes.splice(sIdx, 1);
+  G.auctions[laneIdx] = {
+    snake, dossier,
+    currentBid: Math.floor(dossier.value * 0.4),
+    targetValue: dossier.value,
+    timeLeft: 16,
+    bidder: "Opening Consignment",
+    overtime: false,
+    hypeWar: dossier.isWorldsFirst || dossier.value > 1200
+  };
+  updateAll();
+}
+
+// Master 1-Second Global Tick
+setInterval(() => {
+  let redraw = false;
+
+  // Auctions tick
+  G.auctions.forEach((auc, idx) => {
+    if (!auc) return;
+    auc.timeLeft--;
+    
+    // Dynamic syndicate bidding
+    let bidChance = auc.hypeWar ? 0.65 : 0.40;
+    if (auc.timeLeft > 0 && Math.random() < bidChance) {
+      let bump = Math.floor(auc.targetValue * 0.08) + Math.floor(Math.random() * 35) + 15;
+      auc.currentBid += bump;
+      auc.bidder = AI_SYNDICATES[Math.floor(Math.random() * AI_SYNDICATES.length)];
+      redraw = true;
+
+      // Anti-Snipe Overtime Protection (Now precisely 3 seconds!)
+      if (auc.timeLeft <= 3) {
+        auc.timeLeft += 3;
+        auc.overtime = true;
       }
-
-      let calcName = visualGenes.length ? visualGenes.join(' ') : 'Normal (Wild Type)';
-      if (hets.length) {
-        calcName += ' (' + hets.map(h => `${h.pct === 100 ? '100%' : h.pct + '%'} Het ${h.gene}`).join(' ') + ')';
-      }
-
-      let tier = 'Common';
-      if (val >= 4000) tier = 'Grail';
-      else if (val >= 2500) tier = 'Legendary';
-      else if (val >= 1500) tier = 'Epic';
-      else if (val >= 750) tier = 'Rare';
-      else if (val >= 350) tier = 'Uncommon';
-
-      return {
-        id: 'ML-' + Math.random().toString(36).substring(2, 8).toUpperCase(),
-        name: calcName,
-        sex,
-        ageDays: age,
-        weightGrams: weight,
-        hunger: 100,
-        shedStage: 'normal',
-        genotype,
-        breeder,
-        generation: gen,
-        baseValuation: Math.round(val),
-        rarityTier: tier,
-        phenotypeDescription: desc.join(' ') || 'Standard wild type dorsal rosettes with pearlescent belly scales.'
-      };
     }
 
-    // --- MAIN APP COMPONENT ---
-    function MorphLabApp() {
-      const [tab, setTab] = useState('facility');
-      const [bank, setBank] = useState(5000);
-      const [day, setDay] = useState(1);
-      const [facilityTier, setFacilityTier] = useState(0);
-      const [upgrades, setUpgrades] = useState([]);
-      const [snakes, setSnakes] = useState([]);
-      const [eggs, setEggs] = useState([]);
-      const [freezer, setFreezer] = useState({ pinky_mouse: 20, fuzzy_mouse: 15, hopper_mouse: 10, adult_mouse: 8, rat_pup: 5, rat_weanling: 4, adult_rat: 2, jumbo_rat: 0 });
-      const [isopods, setIsopods] = useState(ISOPODS);
-      const [refreshTimer, setRefreshTimer] = useState(10);
-      const [bargains, setBargains] = useState([]);
-      const [trades, setTrades] = useState([]);
+    if (auc.timeLeft <= 0) {
+      let fee = Math.floor(auc.currentBid * 0.08);
+      let net = auc.currentBid - fee;
+      G.bank += net;
+      alert(`🔨 HAMMER DOWN! Lane ${idx + 1}: ${auc.dossier.morphName} sold to ${auc.bidder} for $${auc.currentBid.toLocaleString()} (Net payout: $${net.toLocaleString()}).`);
+      G.auctions[idx] = null;
+      redraw = true;
+    }
+  });
 
-      // 10 Auction Lanes State
-      const [lanes, setLanes] = useState(Array.from({ length: 10 }, (_, i) => ({
-        id: i, active: false, snake: null, currentBid: 0, reserve: 0, highestBidder: 'None', timeLeft: 0, overtime: false
-      })));
+  // Local Store Micro-Auctions
+  LOCAL_STORES.forEach(store => {
+    if (store.auction) {
+      store.auction.timeLeft--;
+      if (store.auction.timeLeft <= 0) {
+        refreshSingleStoreAuction(store);
+        redraw = true;
+      }
+    }
+  });
 
-      // Starter Snakes Load
-      useEffect(() => {
-        const saved = localStorage.getItem('morphlab_save_v1');
-        if (saved) {
-          try {
-            const data = JSON.parse(saved);
-            setBank(data.bank ?? 5000);
-            setDay(data.day ?? 1);
-            setFacilityTier(data.facilityTier ?? 0);
-            setUpgrades(data.upgrades ?? []);
-            setSnakes(data.snakes ?? []);
-            setEggs(data.eggs ?? []);
-            setFreezer(data.freezer ?? freezer);
-            return;
-          } catch(e){}
-        }
-        const s1 = resolveSpecimen([{ locus: 'pastel_locus', a1: 'pastel', a2: 'wt' }], 'M', 180, 750, 'MorphLab Starter', 0);
-        const s2 = resolveSpecimen([{ locus: 'piebald_locus', a1: 'piebald', a2: 'wt' }], 'F', 240, 1600, 'MorphLab Starter', 0);
-        setSnakes([s1, s2]);
-      }, []);
+  // Market countdown
+  G.marketTimer--;
+  let mktCount = document.getElementById('mkt-refresh-count');
+  if (mktCount) mktCount.innerText = G.marketTimer;
 
-      // Auto-save
-      useEffect(() => {
-        localStorage.setItem('morphlab_save_v1', JSON.stringify({ bank, day, facilityTier, upgrades, snakes, eggs, freezer }));
-      }, [bank, day, facilityTier, upgrades, snakes, eggs, freezer]);
+  if (G.marketTimer <= 0) {
+    refreshMarket();
+    G.marketTimer = 10;
+    redraw = true;
+  }
 
-      // Dynamic Market Generators
-      const regenMarket = useCallback(() => {
-        const b = ['pastel', 'enchi', 'banana', 'fire', 'mojave', 'cinnamon'].map(g => {
-          const s = resolveSpecimen([{ locus: `${g}_locus`, a1: g, a2: 'wt' }], Math.random() > 0.5 ? 'M' : 'F', 120, 300, 'Distressed Liquidator', 1);
-          return { id: 'BGN-' + Math.random().toString(36).substring(2, 6), snake: s, discount: Math.floor(Math.random() * 35) + 25 };
-        });
-        setBargains(b.slice(0, 3));
+  if (redraw) updateAll();
+  else renderAuctionsQuick();
+}, 1000);
 
-        const tSnake = resolveSpecimen([{ locus: 'bel_complex', a1: 'mojave', a2: 'lesser' }], 'F', 180, 850, 'Vipera Prime', 1);
-        setTrades([{
-          id: 'TRD-1',
-          breeder: 'Vipera Prime',
-          criteria: 'Mature Piebald / Het Pied (≥500g)',
-          minWeight: 500,
-          reward: tSnake,
-          cash: 450
-        }]);
-      }, []);
+// --- LIQUIDATIONS & TRADES ---
+function refreshMarket() {
+  G.bargains = [];
+  for (let i = 0; i < 4; i++) {
+    let g = generateGenotype({
+      pastel: Math.random() < 0.5 ? ['pastel', 'wt'] : ['wt', 'wt'],
+      pied: Math.random() < 0.4 ? ['piebald', 'wt'] : ['wt', 'wt'],
+      clown: Math.random() < 0.35 ? ['clown', 'wt'] : ['wt', 'wt'],
+      banana: Math.random() < 0.3 ? ['banana', 'wt'] : ['wt', 'wt'],
+      yb_locus: Math.random() < 0.3 ? ['yellowbelly', 'wt'] : ['wt', 'wt']
+    });
+    let d = resolveDossier(g);
+    let discountRate = 0.70 + (Math.random() * 0.25);
+    let price = Math.max(25, Math.floor(d.value * (1 - discountRate)));
+    G.bargains.push({ id: uid(), genotype: g, dossier: d, price, weight: 220, discountPct: Math.floor(discountRate * 100) });
+  }
 
-      // 1s Interval Game Loop
-      useEffect(() => {
-        const interval = setInterval(() => {
-          setRefreshTimer(t => {
-            if (t <= 1) { regenMarket(); return 10; }
-            return t - 1;
-          });
+  G.trades = [
+    { id: uid(), title: 'Syndicate Want: Male Breeder (500g+)', reqCheck: s => s.sex === 'M' && s.weight >= 500, rewardCash: 1200, rewardMorph: 'Enchi Clown ♀' },
+    { id: uid(), title: 'Commercial Want: Heavy Dam (1200g+)', reqCheck: s => s.sex === 'F' && s.weight >= 1200, rewardCash: 1800, rewardMorph: 'Super Pastel Pied ♂' },
+    { id: uid(), title: 'Collector Want: Heavy Specimen (1500g+)', reqCheck: s => s.weight >= 1500, rewardCash: 2400, rewardMorph: 'Highway Het Clown ♀' }
+  ];
+}
 
-          // Update 10-Lane Auctions
-          setLanes(curLanes => curLanes.map(l => {
-            if (!l.active || !l.snake) return l;
+function buyBargain(idx) {
+  let b = G.bargains[idx];
+  if (G.snakes.length >= G.tubCap) return alert("Facility tubs full!");
+  if (G.bank < b.price) return alert("Insufficient bank balance!");
+  G.bank -= b.price;
+  G.snakes.push({
+    id: uid(), name: `Bargain #${Math.floor(Math.random()*1000)}`,
+    sex: Math.random() > 0.5 ? 'M' : 'F', age: 180,
+    weight: b.weight, hunger: 100, shed: 'Normal', genotype: b.genotype
+  });
+  G.bargains.splice(idx, 1);
+  updateAll();
+}
 
-            let { timeLeft, currentBid, highestBidder, overtime } = l;
-            const isHype = l.snake.baseValuation >= 2000;
-            const bidChance = isHype ? 0.65 : 0.35;
+function executeTrade(tradeIdx) {
+  let selector = document.getElementById(`trade-select-${tradeIdx}`);
+  let snakeId = selector.value;
+  if (!snakeId) return alert("Select a snake to fulfill this contract!");
 
-            if (Math.random() < bidChance && timeLeft > 0) {
-              const newBidder = AI_BIDDERS[Math.floor(Math.random() * AI_BIDDERS.length)];
-              if (newBidder !== highestBidder) {
-                currentBid += Math.round(l.snake.baseValuation * 0.08) + 20;
-                highestBidder = newBidder;
-                if (timeLeft <= 10) { timeLeft += 15; overtime = true; }
-                audio.playBid();
-              }
-            }
+  let sIdx = G.snakes.findIndex(s => s.id === snakeId);
+  let t = G.trades[tradeIdx];
+  G.snakes.splice(sIdx, 1);
+  G.bank += t.rewardCash;
 
-            timeLeft -= 1;
+  let rewardGeno = generateGenotype({ pastel: ['pastel', 'pastel'], pied: ['piebald', 'piebald'], clown: ['clown', 'wt'] });
+  G.snakes.push({
+    id: uid(), name: "Contract Specimen",
+    sex: Math.random() > 0.5 ? 'M' : 'F', age: 260,
+    weight: 950, hunger: 100, shed: 'Normal', genotype: rewardGeno
+  });
 
-            if (timeLeft <= 0) {
-              audio.playHammer();
-              if (currentBid >= l.reserve) {
-                const payout = Math.round(currentBid * 0.92); // 8% commission
-                setBank(b => b + payout);
-                audio.playCash();
-              } else {
-                setSnakes(s => [...s, l.snake]); // Unsold return
-              }
-              return { ...l, active: false, snake: null, timeLeft: 0, overtime: false };
-            }
+  alert(`Trade Completed! Received $${t.rewardCash} and ${t.rewardMorph}.`);
+  G.trades.splice(tradeIdx, 1);
+  updateAll();
+}
 
-            return { ...l, timeLeft, currentBid, highestBidder, overtime };
-          }));
-        }, 1000);
-        return () => clearInterval(interval);
-      }, [regenMarket]);
+// --- LOCAL PET SHOPS ---
+function refreshSingleStoreAuction(store) {
+  let g = generateGenotype({
+    banana: Math.random() < 0.4 ? ['banana', 'wt'] : ['wt', 'wt'],
+    lavender: Math.random() < 0.3 ? ['lavender', 'lavender'] : ['wt', 'wt'],
+    bel_locus: Math.random() < 0.4 ? ['lesser', 'mojave'] : ['wt', 'wt']
+  });
+  let d = resolveDossier(g);
+  let startBid = Math.floor(d.value * 0.25);
+  store.auction = { genotype: g, dossier: d, currentBid: startBid, timeLeft: 10 };
+}
 
-      // Advance Day
-      const nextDay = () => {
-        setDay(d => d + 1);
-        setEggs(curEggs => curEggs.map(e => ({ ...e, daysLeft: Math.max(0, e.daysLeft - (upgrades.includes('incubator_mod') ? 2 : 1)) })));
-        setSnakes(curSnakes => curSnakes.map(s => {
-          const hunger = Math.max(0, s.hunger - (Math.floor(Math.random() * 8) + 6));
-          const weight = hunger > 40 ? s.weightGrams + (facilityTier >= 1 ? 3 : 2) : s.weightGrams;
-          return { ...s, hunger, weightGrams: weight, ageDays: s.ageDays + 1 };
-        }));
-        if (upgrades.includes('autofeeder')) feedAll();
-      };
+function refreshStoreAuctions() {
+  LOCAL_STORES.forEach(s => refreshSingleStoreAuction(s));
+}
 
-      // Feeding
-      const feedSnake = (id) => {
-        const snake = snakes.find(s => s.id === id);
-        if (!snake) return;
-        const spec = FEEDER_SPECS.find(r => snake.weightGrams >= r.min && snake.weightGrams <= r.max) || FEEDER_SPECS[0];
-        if ((freezer[spec.id] || 0) <= 0) {
-          alert(`No ${spec.name} left in freezer!`);
-          return;
-        }
-        setFreezer(f => ({ ...f, [spec.id]: f[spec.id] - 1 }));
-        setSnakes(list => list.map(s => s.id === id ? { ...s, hunger: 100, weightGrams: s.weightGrams + spec.gain } : s));
-      };
+function sellToStoreWholesale(storeIdx) {
+  let store = LOCAL_STORES[storeIdx];
+  let hasFeeders = G.feeders[store.wantFeeder] >= store.feederQty;
+  let hasIso = G.isopodsOwned.includes(store.wantIso);
 
-      const feedAll = () => snakes.filter(s => s.hunger < 50).forEach(s => feedSnake(s.id));
+  if (hasFeeders && hasIso) {
+    G.feeders[store.wantFeeder] -= store.feederQty;
+    G.bank += store.payout;
+    alert(`Wholesale contract delivered to ${store.name}! Earned $${store.payout}.`);
+    updateAll();
+  } else {
+    alert(`Contract requires: ${store.feederQty}x ${store.wantFeeder.replace('_',' ')} AND active culture of ${store.wantIso}!`);
+  }
+}
 
-      // Consign to Auction
-      const consignSnake = (snake) => {
-        const openLane = lanes.find(l => !l.active);
-        if (!openLane) { alert('All 10 auction lanes full!'); return; }
-        setSnakes(s => s.filter(i => i.id !== snake.id));
-        setLanes(curLanes => curLanes.map(l => l.id === openLane.id ? {
-          ...l,
-          active: true,
-          snake,
-          currentBid: Math.round(snake.baseValuation * 0.4),
-          reserve: Math.round(snake.baseValuation * 0.75),
-          highestBidder: 'Opening Reserve',
-          timeLeft: 40,
-          overtime: false
-        } : l));
-        setTab('auctions');
-      };
+function buyStoreMicroAuction(storeIdx) {
+  let store = LOCAL_STORES[storeIdx];
+  let auc = store.auction;
+  if (G.snakes.length >= G.tubCap) return alert("Facility capacity full!");
+  if (G.bank < auc.currentBid) return alert("Not enough bank funds!");
 
-      // Breeding
-      const pairSnakes = (sireId, damId) => {
-        const sire = snakes.find(s => s.id === sireId);
-        const dam = snakes.find(s => s.id === damId);
-        if (!sire || !dam) return;
+  G.bank -= auc.currentBid;
+  G.snakes.push({
+    id: uid(), name: `${store.name.split(' ')[0]} Pick`,
+    sex: Math.random() > 0.5 ? 'M' : 'F', age: 200,
+    weight: 450, hunger: 100, shed: 'Normal', genotype: auc.genotype
+  });
+  alert(`Won shop deal! Acquired ${auc.dossier.morphName}.`);
+  refreshSingleStoreAuction(store);
+  updateAll();
+}
 
-        const count = Math.floor(Math.random() * 4) + 5;
-        const newEggs = [];
-        for (let i = 0; i < count; i++) {
-          const eggGeno = [];
-          const loci = new Set([...sire.genotype.map(g=>g.locus), ...dam.genotype.map(g=>g.locus)]);
-          loci.forEach(loc => {
-            const sp = sire.genotype.find(g => g.locus === loc) || { locus: loc, a1: 'wt', a2: 'wt' };
-            const dp = dam.genotype.find(g => g.locus === loc) || { locus: loc, a1: 'wt', a2: 'wt' };
-            const sAllele = Math.random() < 0.5 ? sp.a1 : sp.a2;
-            const dAllele = Math.random() < 0.5 ? dp.a1 : dp.a2;
-            eggGeno.push({ locus: loc, a1: sAllele, a2: dAllele });
-          });
-          newEggs.push({ id: 'EGG-' + Math.random().toString(36).substring(2, 7), geno: eggGeno, daysLeft: 60 });
-        }
-        setEggs(e => [...e, ...newEggs]);
-        alert(`Copulation successful! ${count} fertile eggs placed in incubator.`);
-        setTab('incubator');
-      };
+// --- ISOPOD CULTURE SPLITTING ---
+function harvestIsopodCulture(isoId) {
+  let iso = ISOPODS.find(x => x.id === isoId);
+  G.bank += iso.cupSell;
+  G.isoSplitsReady = false;
+  alert(`Harvested & sold starter culture of ${iso.name} for $${iso.cupSell}!`);
+  updateAll();
+}
 
-      // Export / Import JSON Saves
-      const exportSave = () => {
-        const payload = { app: 'MorphLab', day, bank, snakes, eggs, freezer, facilityTier, upgrades };
-        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `morphlab_save_day${day}.json`;
-        a.click();
-      };
+// --- UPGRADES ---
+function upgradeColony(type) {
+  let cost = type === 'mouse' ? 120 : 250;
+  if (G.bank >= cost) { G.bank -= cost; G.colonies[type]++; updateAll(); }
+}
 
-      const importSave = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const r = new FileReader();
-        r.onload = ev => {
-          try {
-            const d = JSON.parse(ev.target.result);
-            if (d.snakes) setSnakes(d.snakes);
-            if (d.bank) setBank(d.bank);
-            if (d.day) setDay(d.day);
-            if (d.eggs) setEggs(d.eggs);
-            if (d.freezer) setFreezer(d.freezer);
-            alert('Save restored!');
-          } catch(err) { alert('Invalid file'); }
-        };
-        r.readAsText(file);
-      };
+function buyNutrition() {
+  if (G.bank >= 500 && !G.gutLoadedChow) {
+    G.bank -= 500; G.gutLoadedChow = true; updateAll();
+  }
+}
 
-      const maxCapacity = FACILITY_TIERS[facilityTier].cap;
+function buyIsopod(id) {
+  let iso = ISOPODS.find(x => x.id === id);
+  if (G.bank >= iso.cost && !G.isopodsOwned.includes(id)) {
+    G.bank -= iso.cost; G.isopodsOwned.push(id); updateAll();
+  }
+}
 
-      return (
-        <div className="max-w-4xl mx-auto p-3 flex flex-col min-h-screen">
-          {/* Header */}
-          <header className="bg-slate-900 border border-slate-800 rounded-2xl p-3 mb-3 flex items-center justify-between sticky top-0 z-40">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">🐍</span>
-              <div>
-                <h1 className="font-black text-sm tracking-wide text-white">MORPH<span className="text-emerald-400">LAB</span></h1>
-                <div className="text-[10px] font-mono text-slate-400">Day {day} · {snakes.length}/{maxCapacity} Tubs</div>
-              </div>
-            </div>
+function buyFacilityUpgrade(idx) {
+  let u = UPGRADES[idx];
+  if (G.bank >= u.cost) {
+    G.bank -= u.cost; G.tubCap = u.cap; G.facilityTier = u.tier; updateAll();
+  }
+}
 
-            <div className="flex items-center gap-2">
-              <div className="text-right mr-1">
-                <div className="text-emerald-400 font-mono font-black text-sm">${bank.toLocaleString()}</div>
-                <div className="text-[9px] text-slate-500 font-mono">CAPITAL</div>
-              </div>
-              <button onClick={nextDay} className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-lg shadow">Next Day ▶</button>
-              <button onClick={exportSave} className="p-1.5 bg-slate-800 text-slate-300 rounded-lg text-xs" title="Save Backup">💾</button>
-            </div>
-          </header>
+function buyHardware(id) {
+  let h = HARDWARE_TECH.find(x => x.id === id);
+  if (G.bank >= h.cost && !G.hardwareOwned.includes(id)) {
+    G.bank -= h.cost; G.hardwareOwned.push(id); updateAll();
+  }
+}
 
-          {/* Navigation Bar */}
-          <nav className="flex gap-1.5 overflow-x-auto pb-2 mb-3">
-            {[
-              { id: 'facility', label: 'Tubs', icon: '📦' },
-              { id: 'breeding', label: 'Breed', icon: '🧬' },
-              { id: 'incubator', label: `Eggs (${eggs.length})`, icon: '🥚' },
-              { id: 'auctions', label: '10-Lane Auction', icon: '🔨' },
-              { id: 'bargains', label: 'Bargains', icon: '🏷️' },
-              { id: 'trades', label: 'Trades', icon: '🔄' },
-              { id: 'feeders', label: 'Feeders', icon: '🐀' },
-              { id: 'isopods', label: 'Isopods', icon: '✨' },
-              { id: 'tech', label: 'Racks (600)', icon: '⚙️' }
-            ].map(t => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap ${
-                  tab === t.id ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/50' : 'bg-slate-900 text-slate-400 border border-slate-800'
-                }`}
-              >
-                <span>{t.icon}</span> {t.label}
-              </button>
-            ))}
-          </nav>
+function changeSubstrate(val) { G.substrate = val; updateAll(); }
 
-          {/* Content Views */}
-          <main className="flex-1">
-            {/* TUBS / ZERO-IMAGE DOSSIERS */}
-            {tab === 'facility' && (
-              <div className="space-y-3">
-                <div className="flex justify-between items-center bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-xs">
-                  <span className="font-mono text-slate-400">Specimen Racks</span>
-                  <button onClick={feedAll} className="px-3 py-1 bg-cyan-600 text-white font-bold rounded-lg text-xs">⚡ Feed All Hungry</button>
-                </div>
+// --- GOD MODE CHEATS ---
+function cheatBank(amt) { G.bank += amt; updateAll(); }
+function cheatSpawnBooster() {
+  let boosterGeno = generateGenotype({ banana: ['banana', 'wt'], pied: ['piebald', 'piebald'], pastel: ['pastel', 'pastel'] });
+  G.snakes.push({ id: uid(), name: "Booster Pro", sex: 'M', age: 365, weight: 900, hunger: 100, shed: 'Normal', genotype: boosterGeno });
+  updateAll();
+}
+function cheatForceWorldsFirst() {
+  let crazyGeno = generateGenotype({
+    banana: ['banana', 'banana'],
+    lavender: ['lavender', 'lavender'],
+    enchi: ['enchi', 'enchi'],
+    pied: ['piebald', 'piebald']
+  });
+  G.snakes.push({ id: uid(), name: "Unrecorded Grail", sex: 'F', age: 400, weight: 1500, hunger: 100, shed: 'Normal', genotype: crazyGeno });
+  advanceDay();
+}
+function cheatHatchAllClutches() { G.clutches.forEach(cl => cl.daysLeft = 0); advanceDay(); }
+function cheatHealAll() { G.snakes.forEach(s => { s.hunger = 100; s.shed = 'Normal'; }); updateAll(); }
+function cheatFillFreezer() { Object.keys(G.feeders).forEach(k => G.feeders[k] = 50); updateAll(); }
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {snakes.map(s => (
-                    <div key={s.id} className="bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs flex flex-col justify-between">
-                      <div>
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${s.sex === 'F' ? 'bg-pink-950 text-pink-300' : 'bg-blue-950 text-blue-300'}`}>
-                                {s.sex === 'F' ? '♀ FEMALE' : '♂ MALE'}
-                              </span>
-                              <span className="text-emerald-400 font-bold text-[10px]">{s.rarityTier}</span>
-                            </div>
-                            <h3 className="font-bold text-slate-100 text-sm mt-0.5">{s.name}</h3>
-                          </div>
-                          <div className="text-emerald-400 font-mono font-bold">${s.baseValuation.toLocaleString()}</div>
-                        </div>
+// --- SORTING & UI ---
+function changeSort(val) { G.sortMode = val; renderFacility(); }
+function getSortedSnakes() {
+  let list = [...G.snakes];
+  if (G.sortMode === 'weight') list.sort((a, b) => b.weight - a.weight);
+  else if (G.sortMode === 'value') list.sort((a, b) => resolveDossier(b.genotype).value - resolveDossier(a.genotype).value);
+  else if (G.sortMode === 'age') list.sort((a, b) => b.age - a.age);
+  else if (G.sortMode === 'hunger') list.sort((a, b) => a.hunger - b.hunger);
+  else if (G.sortMode === 'sex') list.sort((a, b) => a.sex.localeCompare(b.sex));
+  return list;
+}
 
-                        <div className="grid grid-cols-3 gap-1 bg-slate-950 p-2 rounded-lg font-mono text-center text-[10px] text-slate-300 mb-2">
-                          <div>WEIGHT: <span className="font-bold text-white">{s.weightGrams}g</span></div>
-                          <div>AGE: <span className="font-bold text-white">{s.ageDays}d</span></div>
-                          <div>HUNGER: <span className={`font-bold ${s.hunger < 50 ? 'text-amber-400' : 'text-emerald-400'}`}>{s.hunger}%</span></div>
-                        </div>
+function setTab(tabId) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + tabId).classList.add('active');
+  event.target.classList.add('active');
+}
 
-                        <div className="bg-slate-950/60 p-2 rounded-lg text-[11px] text-slate-300 italic mb-3">
-                          "{s.phenotypeDescription}"
-                        </div>
-                      </div>
+function updateAll() {
+  document.getElementById('hdr-day').innerText = `DAY ${G.day}`;
+  document.getElementById('hdr-bank').innerText = `$${G.bank.toLocaleString()}`;
+  document.getElementById('hdr-tubs').innerText = `${G.snakes.length} / ${G.tubCap}`;
 
-                      <div className="flex gap-2 pt-2 border-t border-slate-800">
-                        <button onClick={() => feedSnake(s.id)} className="flex-1 py-1 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded">Feed</button>
-                        <button onClick={() => consignSnake(s)} className="flex-1 py-1 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded">Consign</button>
-                        <button onClick={() => {
-                          const p = Math.round(s.baseValuation * 0.65);
-                          setBank(b => b + p);
-                          setSnakes(list => list.filter(i => i.id !== s.id));
-                          audio.playCash();
-                        }} className="px-2 py-1 bg-slate-800 text-slate-400 rounded hover:text-red-400">Sell</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+  renderFacility();
+  renderBreeding();
+  renderAuctionsQuick();
+  renderMarket();
+  renderStores();
+  renderFeeders();
+  renderIsopods();
+  renderUpgrades();
+  renderRegistry();
 
-            {/* BREEDING LAB */}
-            {tab === 'breeding' && (
-              <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 text-xs space-y-4">
-                <h2 className="text-sm font-bold text-pink-400">Selective Mendelian Pairing</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-slate-400 block mb-1">SELECT SIRE (♂ ≥700g)</label>
-                    <select id="sireSelect" className="w-full bg-slate-950 border border-slate-800 p-2 rounded text-slate-200">
-                      <option value="">-- Choose Sire --</option>
-                      {snakes.filter(s => s.sex === 'M' && s.weightGrams >= 700).map(s => (
-                        <option key={s.id} value={s.id}>{s.name} ({s.weightGrams}g)</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-slate-400 block mb-1">SELECT DAM (♀ ≥1500g)</label>
-                    <select id="damSelect" className="w-full bg-slate-950 border border-slate-800 p-2 rounded text-slate-200">
-                      <option value="">-- Choose Dam --</option>
-                      {snakes.filter(s => s.sex === 'F' && s.weightGrams >= 1500).map(s => (
-                        <option key={s.id} value={s.id}>{s.name} ({s.weightGrams}g)</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <button
-                  onClick={() => {
-                    const sId = document.getElementById('sireSelect').value;
-                    const dId = document.getElementById('damSelect').value;
-                    if (sId && dId) pairSnakes(sId, dId);
-                    else alert('Select both an eligible sire and dam!');
-                  }}
-                  className="w-full py-2.5 bg-gradient-to-r from-pink-600 to-purple-600 text-white font-bold rounded-lg shadow"
-                >
-                  Pair & Lay Clutch
-                </button>
-              </div>
-            )}
+  localStorage.setItem('morphlab_pro_save', JSON.stringify(G));
+}
 
-            {/* INCUBATOR */}
-            {tab === 'incubator' && (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {eggs.map(e => (
-                  <div key={e.id} className="bg-slate-900 border border-slate-800 rounded-xl p-3 text-center text-xs flex flex-col justify-between">
-                    <div className="text-3xl my-2">🥚</div>
-                    <div className="font-mono text-slate-400 mb-1">{e.id}</div>
-                    <div className="font-bold text-amber-400 font-mono mb-3">{e.daysLeft > 0 ? `${e.daysLeft}d Remaining` : 'PIPPED!'}</div>
-                    {e.daysLeft <= 0 ? (
-                      <button
-                        onClick={() => {
-                          const hatchling = resolveSpecimen(e.geno, Math.random() > 0.5 ? 'M' : 'F', 1, 65, 'MorphLab Hatchery', 1);
-                          setSnakes(s => [...s, hatchling]);
-                          setEggs(cur => cur.filter(x => x.id !== e.id));
-                          audio.playCash();
-                        }}
-                        className="py-1.5 bg-amber-600 text-white font-bold rounded-lg"
-                      >
-                        Hatch Out
-                      </button>
-                    ) : (
-                      <div className="text-[10px] text-slate-500 font-mono">Candled: Fertile</div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+function renderFacility() {
+  let container = document.getElementById('facility-racks');
+  container.innerHTML = '';
+  let sorted = getSortedSnakes();
 
-            {/* 10-LANE AUCTION FLOOR */}
-            {tab === 'auctions' && (
-              <div className="space-y-3">
-                <div className="bg-slate-900 border border-slate-800 p-2.5 rounded-xl text-xs flex justify-between items-center">
-                  <span className="font-bold text-slate-200">10-Lane Player Consignment Floor</span>
-                  <span className="text-[10px] text-slate-400 font-mono">8% Broker Fee · Anti-Snipe Overtime</span>
-                </div>
+  sorted.forEach(s => {
+    let d = resolveDossier(s.genotype);
+    let card = document.createElement('div');
+    card.className = `dossier ${s.sex === 'M' ? 'male' : 'female'}`;
+    
+    let laneBtns = '';
+    for (let l = 0; l < 10; l++) {
+      if (!G.auctions[l]) {
+        laneBtns += `<button onclick="consignToLane('${s.id}', ${l})">Consign L${l+1}</button> `;
+        break;
+      }
+    }
 
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                  {lanes.map(l => (
-                    <div key={l.id} className={`p-2.5 rounded-xl border flex flex-col justify-between text-xs ${l.active ? 'bg-slate-900 border-emerald-500/60' : 'bg-slate-950/40 border-slate-800'}`}>
-                      {l.active ? (
-                        <div>
-                          <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 mb-1">
-                            <span>LANE #{l.id + 1}</span>
-                            <span className={l.timeLeft <= 10 ? 'text-red-400 font-bold' : 'text-slate-300'}>0:{l.timeLeft < 10 ? '0' + l.timeLeft : l.timeLeft}</span>
-                          </div>
-                          <div className="font-bold text-slate-100 truncate text-[11px] mb-1">{l.snake.name}</div>
-                          <div className="bg-slate-950 p-1.5 rounded text-center my-1.5">
-                            <div className="text-[9px] text-slate-500">HAMMER</div>
-                            <div className="text-emerald-400 font-bold font-mono text-sm">${l.currentBid}</div>
-                          </div>
-                          <div className="text-[9px] text-slate-400 truncate">Bidder: <span className="text-cyan-400 font-bold">{l.highestBidder}</span></div>
-                          {l.overtime && <div className="text-[8px] text-amber-400 font-bold mt-1">+15s Overtime</div>}
-                        </div>
-                      ) : (
-                        <div className="py-8 text-center text-slate-600 font-mono text-[10px]">
-                          <div>LANE #{l.id + 1}</div>
-                          <div className="mt-1">EMPTY</div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* BARGAIN BINS (10S COUNTDOWN) */}
-            {tab === 'bargains' && (
-              <div className="space-y-3">
-                <div className="flex justify-between items-center bg-slate-900 border border-slate-800 p-2.5 rounded-xl text-xs">
-                  <span className="font-bold text-slate-200">Distressed Liquidation Bins</span>
-                  <span className="text-amber-400 font-mono font-bold">Refresh: {refreshTimer}s</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {bargains.map(b => {
-                    const price = Math.round(b.snake.baseValuation * (1 - b.discount / 100));
-                    return (
-                      <div key={b.id} className="bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs flex flex-col justify-between">
-                        <div>
-                          <div className="flex justify-between text-[10px] mb-1">
-                            <span className="bg-red-950 text-red-300 px-1.5 py-0.5 rounded font-bold">-{b.discount}% OFF</span>
-                            <span className="text-slate-400 font-mono">${price}</span>
-                          </div>
-                          <div className="font-bold text-slate-100 text-sm">{b.snake.name}</div>
-                          <div className="text-[11px] text-slate-300 italic my-2">"{b.snake.phenotypeDescription}"</div>
-                        </div>
-                        <button
-                          disabled={bank < price || snakes.length >= maxCapacity}
-                          onClick={() => {
-                            setBank(c => c - price);
-                            setSnakes(s => [...s, b.snake]);
-                            setBargains(list => list.filter(i => i.id !== b.id));
-                            audio.playCash();
-                          }}
-                          className="w-full py-1.5 bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 text-white font-bold rounded-lg text-xs"
-                        >
-                          Snatch Deal (${price})
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* BREEDER TRADES */}
-            {tab === 'trades' && (
-              <div className="space-y-3">
-                <div className="flex justify-between items-center bg-slate-900 border border-slate-800 p-2.5 rounded-xl text-xs">
-                  <span className="font-bold text-slate-200">Breeder Trade Network</span>
-                  <span className="text-purple-400 font-mono font-bold">Refresh: {refreshTimer}s</span>
-                </div>
-                {trades.map(t => {
-                  const eligible = snakes.find(s => s.weightGrams >= t.minWeight);
-                  return (
-                    <div key={t.id} className="bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs flex justify-between items-center">
-                      <div>
-                        <div className="font-bold text-cyan-400">{t.breeder}</div>
-                        <div className="text-slate-300 font-semibold mt-0.5">Demanding: {t.criteria}</div>
-                        <div className="text-[11px] text-slate-400 mt-1">Reward: <span className="text-purple-300 font-bold">{t.reward.name}</span> + ${t.cash}</div>
-                      </div>
-                      <button
-                        disabled={!eligible}
-                        onClick={() => {
-                          setSnakes(s => [...s.filter(i => i.id !== eligible.id), t.reward]);
-                          setBank(b => b + t.cash);
-                          setTrades(list => list.filter(i => i.id !== t.id));
-                          audio.playCash();
-                        }}
-                        className="px-3 py-2 bg-purple-600 disabled:bg-slate-800 text-white font-bold rounded-lg"
-                      >
-                        Trade
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* FEEDERS */}
-            {tab === 'feeders' && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                {FEEDER_SPECS.map(spec => (
-                  <div key={spec.id} className="bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-center text-xs">
-                    <div className="text-slate-400 text-[10px] font-mono">{spec.name}</div>
-                    <div className="text-lg font-bold font-mono text-white my-1">{freezer[spec.id] || 0}</div>
-                    <button
-                      disabled={bank < spec.cost * 5}
-                      onClick={() => {
-                        setBank(b => b - spec.cost * 5);
-                        setFreezer(f => ({ ...f, [spec.id]: (f[spec.id] || 0) + 5 }));
-                      }}
-                      className="w-full py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[10px] font-bold"
-                    >
-                      Buy 5 (${spec.cost * 5})
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* ISOPOD LAB */}
-            {tab === 'isopods' && (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {isopods.map(iso => (
-                  <div key={iso.id} className="bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs flex flex-col justify-between">
-                    <div>
-                      <div className="flex justify-between text-[10px] mb-1">
-                        <span className="text-emerald-400 font-bold">{iso.rarity}</span>
-                        <span className="text-slate-400 font-mono">{iso.pop} Count</span>
-                      </div>
-                      <div className="font-bold text-slate-100">{iso.name}</div>
-                      <div className="text-[10px] text-slate-400 italic mb-2">{iso.sci}</div>
-                      <div className="text-[11px] text-slate-300 bg-slate-950 p-2 rounded mb-2">{iso.buff}</div>
-                    </div>
-                    <button
-                      disabled={iso.pop < 10}
-                      onClick={() => {
-                        setBank(b => b + iso.price);
-                        setIsopods(cur => cur.map(i => i.id === iso.id ? { ...i, pop: i.pop - 5 } : i));
-                        audio.playCash();
-                      }}
-                      className="w-full py-1.5 bg-emerald-600 disabled:bg-slate-800 text-white font-bold rounded-lg text-xs"
-                    >
-                      Sell Starter Pack (${iso.price})
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* TECH TREE (UP TO 600 TUBS) */}
-            {tab === 'tech' && (
-              <div className="space-y-3">
-                <div className="bg-slate-900 border border-slate-800 p-3 rounded-xl text-xs">
-                  <div className="font-bold text-slate-100 text-sm mb-1">Facility Expansion Ladder</div>
-                  <div className="text-slate-400 text-[11px]">Hard capacity cap of 600 tubs.</div>
-                </div>
-                {FACILITY_TIERS.map(t => {
-                  const owned = facilityTier >= t.tier;
-                  const isNext = facilityTier + 1 === t.tier;
-                  return (
-                    <div key={t.tier} className={`p-3 rounded-xl border flex justify-between items-center text-xs ${owned ? 'bg-slate-950 border-emerald-900/40' : isNext ? 'bg-slate-900 border-amber-500/50' : 'bg-slate-950/40 border-slate-800 opacity-60'}`}>
-                      <div>
-                        <div className="font-bold text-slate-200">TIER {t.tier}: {t.name}</div>
-                        <div className="text-emerald-400 font-mono text-[11px] font-bold">Capacity: {t.cap} Spaces</div>
-                      </div>
-                      {isNext && (
-                        <button
-                          disabled={bank < t.cost}
-                          onClick={() => {
-                            setBank(b => b - t.cost);
-                            setFacilityTier(t.tier);
-                            audio.playCash();
-                          }}
-                          className="px-3 py-1.5 bg-amber-600 disabled:bg-slate-800 text-white font-bold rounded-lg"
-                        >
-                          Upgrade (${t.cost.toLocaleString()})
-                        </button>
-                      )}
-                      {owned && <span className="text-emerald-400 font-bold font-mono">ACTIVE</span>}
-                    </div>
-                  );
-                })}
-
-                <div className="pt-2">
-                  <button
-                    disabled={upgrades.includes('autofeeder') || bank < 2500}
-                    onClick={() => {
-                      setBank(b => b - 2500);
-                      setUpgrades(u => [...u, 'autofeeder']);
-                    }}
-                    className={`w-full p-3 rounded-xl border text-xs font-bold text-left flex justify-between items-center ${
-                      upgrades.includes('autofeeder') ? 'bg-slate-950 border-cyan-800 text-cyan-300' : 'bg-slate-900 border-slate-800 text-slate-200'
-                    }`}
-                  >
-                    <div>
-                      <div>⚡ Auto-Feeder Conveyor Logistics</div>
-                      <div className="text-[10px] text-slate-400 font-normal">Automatically draws thawed feeders from inventory on daily tick.</div>
-                    </div>
-                    <span>{upgrades.includes('autofeeder') ? 'INSTALLED' : '$2,500'}</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </main>
-
-          {/* Hidden Save Import Input */}
-          <input type="file" id="importInput" onChange={importSave} accept=".json" className="hidden" />
-          <footer className="mt-6 text-center text-[10px] text-slate-600 font-mono flex justify-center gap-3">
-            <span onClick={() => document.getElementById('importInput').click()} className="cursor-pointer underline">Restore JSON Save</span>
-            <span>·</span>
-            <span>MorphLab v1.0</span>
-          </footer>
+    card.innerHTML = `
+      <div class="dossier-head">
+        <span onclick="renameSnake('${s.id}')" style="cursor:pointer;" title="Click to rename">${s.name} [${d.morphName}] ✏️</span>
+        <span style="color:${s.sex==='M'?'var(--male)':'var(--female)'}">${s.sex==='M'?'♂':'♀'}</span>
+      </div>
+      <div class="dossier-meta">AGE: ${s.age}d | WEIGHT: ${s.weight}g | HUNGER: ${s.hunger}% | SHED: ${s.shed}</div>
+      <div class="dossier-genes">${d.hets ? '🧬 ' + d.hets : 'Pureline'}</div>
+      <div class="dossier-desc">"${d.desc}"</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
+        <span class="badge ${d.isWorldsFirst ? 'badge-wf' : 'badge-accent'}">
+          ${d.isWorldsFirst ? '🌟 WORLD\'S FIRST' : 'Val: ~$' + d.value.toLocaleString()}
+        </span>
+        <div>
+          <button onclick="feedSnake('${s.id}')" ${s.hunger>=100?'disabled':''}>Feed</button>
+          <button onclick="quickWholesaleSnake('${s.id}')">Wholesale ($${Math.floor(d.value*0.45)})</button>
+          ${laneBtns}
         </div>
-      );
-    }
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<MorphLabApp />);
-  </script>
+function renderBreeding() {
+  let grid = document.getElementById('breeding-slots-grid');
+  grid.innerHTML = '';
+
+  G.breedingSlots.forEach((slot, idx) => {
+    let sire = G.snakes.find(s => s.id === slot.sireId);
+    let dam = G.snakes.find(s => s.id === slot.damId);
+
+    let sireOptions = '<option value="">-- Assign Sire (♂ min 500g) --</option>';
+    let damOptions = '<option value="">-- Assign Dam (♀ min 1200g) --</option>';
+
+    G.snakes.filter(s => s.sex === 'M' && s.weight >= 500).forEach(s => {
+      sireOptions += `<option value="${s.id}" ${slot.sireId===s.id?'selected':''}>${s.name} (${s.weight}g)</option>`;
+    });
+    G.snakes.filter(s => s.sex === 'F' && s.weight >= 1200).forEach(s => {
+      damOptions += `<option value="${s.id}" ${slot.damId===s.id?'selected':''}>${s.name} (${s.weight}g)</option>`;
+    });
+
+    let oddsPreview = (sire && dam) ? calculateBreedingOdds(sire.genotype, dam.genotype) : 'Assign pair to calculate Mendelian odds.';
+
+    let el = document.createElement('div');
+    el.className = 'dossier';
+    el.innerHTML = `
+      <div class="dossier-head">ENCLOSURE #${idx+1}</div>
+      <div style="margin-bottom:6px;">
+        <select onchange="assignBreederSlot(${idx}, 'sire', this.value)" style="width:100%; margin-bottom:4px;">${sireOptions}</select>
+        <select onchange="assignBreederSlot(${idx}, 'dam', this.value)" style="width:100%;">${damOptions}</select>
+      </div>
+      <div style="font-size:10px; color:var(--gold); margin-bottom:6px; background:#080b0e; padding:4px; border-radius:3px;">
+        🎲 ODDS: ${oddsPreview}
+      </div>
+      <div style="font-size:11px; color:var(--muted);">
+        LOCK PROGRESS: <span style="color:var(--accent); font-weight:bold;">${slot.sireId && slot.damId ? slot.progress + ' / 3 Days' : 'Inactive'}</span>
+      </div>
+    `;
+    grid.appendChild(el);
+  });
+
+  let inc = document.getElementById('incubator-grid');
+  inc.innerHTML = '';
+  G.clutches.forEach((c, cIdx) => {
+    let el = document.createElement('div');
+    el.className = 'dossier';
+    el.innerHTML = `
+      <div class="dossier-head">CLUTCH OF ${c.eggs.length} VIABLE EGGS</div>
+      <div style="color:var(--accent); font-weight:bold; margin-bottom:6px;">${c.daysLeft} DAYS TO PIPPING</div>
+      <button onclick="candleClutch(${cIdx})">${c.candled ? 'Re-Candle Clutch 🔍' : 'Candle Clutch 🥚'}</button>
+    `;
+    inc.appendChild(el);
+  });
+  if (G.clutches.length === 0) inc.innerHTML = '<div style="color:var(--muted);">Incubator is empty.</div>';
+}
+
+function renderAuctionsQuick() {
+  let container = document.getElementById('auction-lanes');
+  container.innerHTML = '';
+  G.auctions.forEach((auc, idx) => {
+    let el = document.createElement('div');
+    if (!auc) {
+      el.className = 'auction-slot';
+      el.innerHTML = `
+        <div style="color:var(--muted); font-weight:bold;">LANE ${idx+1}: OPEN</div>
+        <p style="color:var(--muted); font-size:11px;">Consign a specimen from facility racks to activate lane.</p>
+        <span class="badge">EMPTY</span>
+      `;
+    } else {
+      let hypeClass = auc.hypeWar ? 'hype' : '';
+      let otClass = auc.overtime ? 'overtime' : '';
+      el.className = `auction-slot occupied ${hypeClass} ${otClass}`;
+      el.innerHTML = `
+        <div>
+          <div style="display:flex; justify-content:space-between; font-weight:bold;">
+            <span>LANE ${idx+1}: ACTIVE ${auc.hypeWar ? '🔥 HYPE WAR' : ''}</span>
+            <span style="color:var(--accent); font-size:14px;">$${auc.currentBid.toLocaleString()}</span>
+          </div>
+          <div style="color:var(--white); margin:4px 0;">${auc.dossier.morphName}</div>
+          <div style="color:var(--gold); font-size:11px;">Bidder: ${auc.bidder}</div>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+          <span style="font-size:11px; color:${auc.overtime?'var(--danger)':'var(--muted)'};">
+            ${auc.overtime ? '⚡ +3s EXTENSION' : 'HAMMER IN:'}
+          </span>
+          <span class="stat" style="font-size:16px;">0:${auc.timeLeft < 10 ? '0' : ''}${auc.timeLeft}</span>
+        </div>
+      `;
+    }
+    container.appendChild(el);
+  });
+}
+
+function renderMarket() {
+  let bBox = document.getElementById('bargain-bins');
+  bBox.innerHTML = '';
+  G.bargains.forEach((b, idx) => {
+    let el = document.createElement('div');
+    el.className = 'dossier';
+    el.innerHTML = `
+      <div class="dossier-head">${b.dossier.morphName}</div>
+      <div style="color:var(--accent); font-weight:bold; margin-bottom:4px;">
+        $${b.price} <strike style="color:var(--muted); font-size:11px;">$${b.dossier.value}</strike>
+        <span class="badge badge-danger">${b.discountPct}% OFF</span>
+      </div>
+      <p style="color:var(--muted); font-size:11px;">Breeder distressed liquidation.</p>
+      <button onclick="buyBargain(${idx})">Purchase Bargain</button>
+    `;
+    bBox.appendChild(el);
+  });
+
+  let tBox = document.getElementById('breeder-trades');
+  tBox.innerHTML = '';
+  G.trades.forEach((t, idx) => {
+    let qualifiedSnakes = G.snakes.filter(t.reqCheck);
+    let selectOpts = '<option value="">-- Choose Snake to Trade --</option>';
+    qualifiedSnakes.forEach(s => {
+      selectOpts += `<option value="${s.id}">${s.name} [${resolveDossier(s.genotype).morphName}] (${s.weight}g)</option>`;
+    });
+
+    let el = document.createElement('div');
+    el.className = 'dossier';
+    el.innerHTML = `
+      <div class="dossier-head">${t.title}</div>
+      <p style="color:var(--gold); margin:4px 0;">Payout: +$${t.rewardCash} & ${t.rewardMorph}</p>
+      <div style="margin-bottom:8px;">
+        <select id="trade-select-${idx}" style="width:100%;">${selectOpts}</select>
+      </div>
+      <button onclick="executeTrade(${idx})" ${qualifiedSnakes.length===0?'disabled':''}>Fulfill Contract</button>
+    `;
+    tBox.appendChild(el);
+  });
+}
+
+function renderStores() {
+  let grid = document.getElementById('stores-grid');
+  grid.innerHTML = '';
+  LOCAL_STORES.forEach((s, idx) => {
+    let auc = s.auction;
+    let el = document.createElement('div');
+    el.className = 'dossier';
+    el.innerHTML = `
+      <div class="dossier-head">
+        <span>${s.name}</span>
+        <span class="badge badge-accent">${s.rep}</span>
+      </div>
+      <p style="color:var(--muted); font-size:11px;">Contract: Supply <b>${s.feederQty}x ${s.wantFeeder.replace('_',' ')}</b> & <b>${s.wantIso.replace('_',' ')}</b> for <b>$${s.payout}</b>.</p>
+      <button onclick="sellToStoreWholesale(${idx})" style="margin-bottom:12px;">Ship Wholesale Order</button>
+      
+      <div style="background:#090c0f; border:1px solid var(--border-bright); padding:8px; border-radius:4px;">
+        <div style="display:flex; justify-content:space-between; font-weight:bold;">
+          <span style="font-size:11px; color:var(--gold);">Store Micro-Auction:</span>
+          <span style="color:var(--danger);">0:${auc.timeLeft < 10 ? '0' : ''}${auc.timeLeft}</span>
+        </div>
+        <div style="color:#fff; font-size:12px; margin:2px 0;">${auc.dossier.morphName}</div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="color:var(--accent); font-weight:bold;">Price: $${auc.currentBid}</span>
+          <button onclick="buyStoreMicroAuction(${idx})">Buy Specimen</button>
+        </div>
+      </div>
+    `;
+    grid.appendChild(el);
+  });
+}
+
+function renderFeeders() {
+  document.getElementById('mouse-colony-stat').innerText = `Active Trios: ${G.colonies.mouse}`;
+  document.getElementById('asf-colony-stat').innerText = `Active Colonies: ${G.colonies.asf}`;
+  document.getElementById('btn-nutrition').innerText = G.gutLoadedChow ? 'Gut-Loaded Chow Active (+20% Growth)' : 'Upgrade to Gut-Loaded Chow ($500)';
+  if (G.gutLoadedChow) document.getElementById('btn-nutrition').disabled = true;
+
+  let inv = document.getElementById('feeder-inventory');
+  inv.innerHTML = '';
+  FEEDER_TYPES.forEach(f => {
+    inv.innerHTML += `
+      <div class="dossier">
+        <div class="dossier-head">${f.name}</div>
+        <div style="color:var(--accent); font-size:16px; font-weight:bold; margin-bottom:4px;">${G.feeders[f.id]} in Freezer</div>
+        <div style="display:flex; flex-wrap:wrap; gap:4px;">
+          <button onclick="wholesaleFeeder('${f.id}', 5)" ${G.feeders[f.id]<5?'disabled':''}>Sell 5 ($${f.sell*5})</button>
+          <button onclick="packWholesaleCarton('${f.id}')" ${G.feeders[f.id]<25?'disabled':''}>Pack Carton (25) 📦</button>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function renderIsopods() {
+  let grid = document.getElementById('isopod-grid');
+  grid.innerHTML = '';
+  ISOPODS.forEach(iso => {
+    let owned = G.isopodsOwned.includes(iso.id);
+    let el = document.createElement('div');
+    el.className = 'dossier';
+    el.innerHTML = `
+      <div class="dossier-head">
+        <span>${iso.name}</span>
+        <span class="badge badge-gold">${iso.rarity}</span>
+      </div>
+      <p style="color:var(--accent); font-size:11px; margin:4px 0 8px 0;">PERK: ${iso.perk}</p>
+      <div style="display:flex; gap:6px;">
+        <button onclick="buyIsopod('${iso.id}')" ${owned ? 'disabled' : ''}>
+          ${owned ? 'Culture Active' : `Cultivate ($${iso.cost})`}
+        </button>
+        ${owned ? `<button onclick="harvestIsopodCulture('${iso.id}')" ${!G.isoSplitsReady?'disabled':''}>Split Culture (+$${iso.cupSell})</button>` : ''}
+      </div>
+    `;
+    grid.appendChild(el);
+  });
+}
+
+function renderUpgrades() {
+  let techGrid = document.getElementById('tech-tree-grid');
+  techGrid.innerHTML = '';
+  HARDWARE_TECH.forEach(h => {
+    let owned = G.hardwareOwned.includes(h.id);
+    techGrid.innerHTML += `
+      <div class="dossier">
+        <div class="dossier-head">${h.name}</div>
+        <p style="color:var(--muted); font-size:11px;">${h.desc}</p>
+        <button onclick="buyHardware('${h.id}')" ${owned?'disabled':''}>
+          ${owned ? 'Installed' : `Install ($${h.cost.toLocaleString()})`}
+        </button>
+      </div>
+    `;
+  });
+
+  let ladderGrid = document.getElementById('upgrade-ladder');
+  ladderGrid.innerHTML = '';
+  UPGRADES.forEach((u, idx) => {
+    let unlocked = G.facilityTier >= u.tier;
+    ladderGrid.innerHTML += `
+      <div class="dossier">
+        <div class="dossier-head">${u.name}</div>
+        <p style="color:var(--muted); font-size:11px;">${u.desc}</p>
+        <div style="color:var(--accent); font-weight:bold; margin-bottom:6px;">Capacity: ${u.cap} Tubs</div>
+        <button onclick="buyFacilityUpgrade(${idx})" ${unlocked || G.facilityTier !== u.tier - 1 ? 'disabled' : ''}>
+          ${unlocked ? 'Operational' : `Commission ($${u.cost.toLocaleString()})`}
+        </button>
+      </div>
+    `;
+  });
+}
+
+function renderRegistry() {
+  document.getElementById('registry-count').innerText = `Unique Genetic Discoveries: ${G.discoveredMorphs.length}`;
+  let list = document.getElementById('registry-list');
+  list.innerHTML = '';
+  G.hallOfFame.forEach(h => {
+    list.innerHTML += `
+      <div class="dossier" style="border-left-color:var(--gold);">
+        <div class="dossier-head">🌟 ${h.morph}</div>
+        <div style="color:var(--gold); font-size:11px;">First Hatched: Day ${h.day}</div>
+        <div style="color:var(--accent); font-weight:bold;">Syndicate Bounty Awarded: +$${h.bounty.toLocaleString()}</div>
+      </div>
+    `;
+  });
+  if (G.hallOfFame.length === 0) list.innerHTML = '<div style="color:var(--muted);">No unrecorded morph combinations discovered yet. Breed rare combos to earn your place in the Hall of Fame!</div>';
+}
+
+// --- SAVE & RESTORE ---
+function exportSave() { document.getElementById('save-io').value = JSON.stringify(G); }
+function importSave() {
+  let raw = document.getElementById('save-io').value;
+  if (!raw) return alert("Paste valid JSON first!");
+  try { G = JSON.parse(raw); updateAll(); alert("Save data restored!"); }
+  catch(e) { alert("Corrupted save file."); }
+}
+function resetGame() {
+  if (confirm("Reset MorphLab back to Day 1?")) {
+    localStorage.removeItem('morphlab_pro_save');
+    location.reload();
+  }
+}
+
+// --- BOOTSTRAP ---
+let cached = localStorage.getItem('morphlab_pro_save');
+if (cached) {
+  try { G = JSON.parse(cached); updateAll(); }
+  catch(e) { initGame(); }
+} else {
+  initGame();
+}
+</script>
 </body>
 </html>
